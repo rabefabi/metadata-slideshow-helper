@@ -1,0 +1,17 @@
+get_image_urls:
+  name: Get Image URLs
+  description: Return filtered image URLs for slideshow usage.
+  response: optional
+  fields:
+    include_tags:
+      description: Tags to include (comma-separated or list).
+      example: "family,vacation"
+      required: false
+    exclude_tags:
+      description: Tags to exclude (comma-separated or list).
+      example: "work"
+      required: false
+    min_rating:
+      description: Minimum star rating (0-5).
+      example: 3
+      required: false

@@ -1,0 +1,21 @@
+[project]
+name = "hass-slideshow"
+version = "0.0.0"
+requires-python = ">=3.13"
+
+[project.optional-dependencies]
+dev = ["ruff", "mypy", "homeassistant-stubs"]
+
+[tool.ruff]
+line-length = 100
+src = ["custom_components"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "PL", "RUF"]  # broad coverage incl. pyupgrade/bugbear
+ignore = ["E501"]  # line length delegated to formatter
+
+[tool.mypy]
+python_version = "3.13"
+check_untyped_defs = true
+ignore_missing_imports = true
+namespace_packages = true

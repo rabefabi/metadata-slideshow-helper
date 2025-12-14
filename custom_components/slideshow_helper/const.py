@@ -1,0 +1,10 @@
+DOMAIN = "slideshow_helper"
+CONF_MEDIA_DIR = "media_dir"
+CONF_INCLUDE_TAGS = "include_tags"
+CONF_EXCLUDE_TAGS = "exclude_tags"
+CONF_MIN_RATING = "min_rating"
+CONF_REFRESH_INTERVAL = "refresh_interval"
+CONF_CYCLE_INTERVAL = "cycle_interval"
+DEFAULT_REFRESH_INTERVAL = 3600
+DEFAULT_MIN_RATING = 0
+DEFAULT_CYCLE_INTERVAL = 10
