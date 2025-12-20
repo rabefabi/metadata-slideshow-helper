@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import dataclass
 
@@ -7,7 +8,11 @@ import exifread
 import piexif
 from PIL import Image  # noqa: F401 (placeholder for future use)
 
+# Suppress exifread warnings for unrecognized formats
+logging.getLogger("exifread").setLevel(logging.ERROR)
+
 SUPPORTED_EXT = {".jpg", ".jpeg", ".png"}
+
 
 @dataclass
 class ImageMeta:
@@ -16,22 +21,34 @@ class ImageMeta:
     rating: int
     date: str | None
 
+
 class MediaScanner:
     def __init__(self, root: str):
         self.root = root
 
     def scan(self) -> list[ImageMeta]:
         results: list[ImageMeta] = []
+        if not os.path.isdir(self.root):
+            # TODO: Log warning
+            return results
+
+        # TODO: Check if pathlib glob 
         for dirpath, _, filenames in os.walk(self.root):
             for fn in filenames:
                 ext = os.path.splitext(fn)[1].lower()
                 if ext not in SUPPORTED_EXT:
                     continue
                 full = os.path.join(dirpath, fn)
+
+                # Skip unreadable files (broken symlinks, permission issues)
+                if not os.path.isfile(full) or not os.access(full, os.R_OK):
+                    continue
+
                 try:
                     meta = self._read_metadata(full)
                     results.append(meta)
                 except Exception:
+                    # Skip files that can't be read at all
                     results.append(ImageMeta(path=full, tags=[], rating=0, date=None))
         return results
 
@@ -40,25 +57,39 @@ class MediaScanner:
         rating = 0
         date = None
         ext = os.path.splitext(path)[1].lower()
+
+        # Only try to read EXIF from JPEG files
         if ext in {".jpg", ".jpeg"}:
+            # Verify file is accessible and readable
+            if not os.path.isfile(path) or not os.access(path, os.R_OK):
+                return ImageMeta(path=path, tags=tags, rating=rating, date=date)
+
             try:
                 with open(path, "rb") as f:
-                    exif_tags = exifread.process_file(f, details=False)
-                    raw_date = exif_tags.get("EXIF DateTimeOriginal") or exif_tags.get("Image DateTime")
+                    exif_tags = exifread.process_file(
+                        f, details=False, stop_tag="EXIF DateTimeOriginal"
+                    )
+                    raw_date = exif_tags.get("EXIF DateTimeOriginal") or exif_tags.get(
+                        "Image DateTime"
+                    )
                     date = str(raw_date) if raw_date else None
             except Exception:
-                pass
+                pass  # Silently skip EXIF read errors
+
             try:
                 exif_dict = piexif.load(path)
                 xmp_rating = exif_dict.get("0th", {}).get(piexif.ImageIFD.Rating)
                 if isinstance(xmp_rating, int):
                     rating = xmp_rating
             except Exception:
-                pass
+                pass  # Silently skip piexif errors
+
         return ImageMeta(path=path, tags=tags, rating=rating or 0, date=date)
 
 
-def apply_filters(items: list[ImageMeta], include_tags: list[str], exclude_tags: list[str], min_rating: int) -> list[ImageMeta]:
+def apply_filters(
+    items: list[ImageMeta], include_tags: list[str], exclude_tags: list[str], min_rating: int
+) -> list[ImageMeta]:
     inc = set(t.lower() for t in include_tags or [])
     exc = set(t.lower() for t in exclude_tags or [])
     out: list[ImageMeta] = []

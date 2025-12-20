@@ -18,7 +18,9 @@ from .const import (
     DEFAULT_CYCLE_INTERVAL,
     DEFAULT_REFRESH_INTERVAL,
     DOMAIN,
+    INTEGRATION_VERSION,
 )
+from .http import SlideshowImageView
 from .scanner import MediaScanner
 
 _LOGGER = logging.getLogger(__name__)
@@ -29,6 +31,12 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
+    _LOGGER.info("slideshow_helper version %s starting", INTEGRATION_VERSION)
+
+    # Register HTTP view for serving images (once per domain)
+    if "http_view_registered" not in hass.data[DOMAIN]:
+        hass.http.register_view(SlideshowImageView())
+        hass.data[DOMAIN]["http_view_registered"] = True
 
     # Create coordinator that scans media directory
     media_dir = entry.data.get(CONF_MEDIA_DIR)
@@ -42,25 +50,40 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Cycling state
     cycle_index: int = 0
     last_cycle: float = time.time()
+    cached_items: list = []
+    last_scan: float = 0.0
+    scan_interval: float = 300.0  # Rescan filesystem every 5 minutes
 
     async def async_update_data():
         """Fetch data from media scanner and handle cycling."""
-        nonlocal last_cycle, cycle_index
+        nonlocal last_cycle, cycle_index, cached_items, last_scan
+        
+        current_time = time.time()
+        
+        # Only rescan filesystem periodically, not every update
         if not media_dir:
             items = []
-        else:
+        elif not cached_items or (current_time - last_scan) >= scan_interval:
+            _LOGGER.info(f"Scanning media_dir: {media_dir}")
             scanner = MediaScanner(media_dir)
             items = await hass.async_add_executor_job(scanner.scan)
+            cached_items = items
+            last_scan = current_time
+            if items:
+                _LOGGER.info(f"Found {len(items)} images")
+            else:
+                _LOGGER.warning(f"No images found in {media_dir}")
+        else:
+            items = cached_items
 
         # Auto-cycle through images based on elapsed time
-        current_time = time.time()
         time_since_cycle = current_time - last_cycle
 
         if items and time_since_cycle >= cycle_interval:
             cycle_index = (cycle_index + 1) % len(items)
             last_cycle = current_time
-            _LOGGER.debug(
-                f"Cycling to image {cycle_index}/{len(items)}: {items[cycle_index].path}"
+            _LOGGER.info(
+                f"Cycling to image {cycle_index + 1}/{len(items)}: {items[cycle_index].path}"
             )
 
         # Ensure index is valid
@@ -68,15 +91,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             cycle_index = cycle_index % len(items)
             current_path = items[cycle_index].path
             relative_path = os.path.relpath(current_path, media_dir)
+            # Encode path and use custom view URL
+            encoded_path = relative_path.replace("/", "_SLASH_")
             # Add cache-buster so Lovelace cards refresh when cycling
-            current_url = f"/media/{relative_path}?v={cycle_index}"
+            current_url = f"/api/slideshow_helper/{entry.entry_id}/{encoded_path}?v={cycle_index}"
         else:
             current_path = None
             current_url = None
-
-        _LOGGER.debug(
-            f"Update: {len(items)} images, index: {cycle_index}, time_since: {time_since_cycle:.1f}s, interval: {cycle_interval}s"
-        )
 
         return {
             "images": items,
