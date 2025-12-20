@@ -4,6 +4,9 @@ ha-config
 sample-media
 !sample-media/.gitkeep
 
+## AI Tooling
+.playwright-mcp
+
 
 # Python
 __pycache__/
