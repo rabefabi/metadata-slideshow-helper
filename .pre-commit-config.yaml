@@ -7,6 +7,12 @@ repos:
         language: system
         types_or: [python]
         args: ["run", "ruff", "check", "--fix"]
+      - id: ruff-format
+        name: ruff-format
+        entry: uv
+        language: system
+        types_or: [python]
+        args: ["run", "ruff", "format"]
       - id: mypy
         name: mypy
         entry: uv
