@@ -1,6 +1,4 @@
 DOMAIN = "slideshow_helper"
-# TODO: Read version from manifest.json
-INTEGRATION_VERSION = "0.1.3"
 CONF_MEDIA_DIR = "media_dir"
 CONF_INCLUDE_TAGS = "include_tags"
 CONF_EXCLUDE_TAGS = "exclude_tags"

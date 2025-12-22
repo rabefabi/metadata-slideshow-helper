@@ -1,7 +1,7 @@
 {
   "domain": "slideshow_helper",
   "name": "Slideshow Helper",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "documentation": "https://github.com/rabefabi/metadata-slideshow-helper",
   "issue_tracker": "https://github.com/rabefabi/metadata-slideshow-helper/issues",
   "requirements": [

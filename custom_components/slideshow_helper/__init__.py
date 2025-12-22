@@ -18,7 +18,6 @@ from .const import (
     DEFAULT_CYCLE_INTERVAL,
     DEFAULT_REFRESH_INTERVAL,
     DOMAIN,
-    INTEGRATION_VERSION,
 )
 from .http import SlideshowImageView
 from .scanner import MediaScanner
@@ -31,7 +30,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
-    _LOGGER.info("slideshow_helper version %s starting", INTEGRATION_VERSION)
+    _LOGGER.info("slideshow_helper starting")
 
     # Register HTTP view for serving images (once per domain)
     if "http_view_registered" not in hass.data[DOMAIN]:
@@ -57,9 +56,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async def async_update_data():
         """Fetch data from media scanner and handle cycling."""
         nonlocal last_cycle, cycle_index, cached_items, last_scan
-        
+
         current_time = time.time()
-        
+
         # Only rescan filesystem periodically, not every update
         if not media_dir:
             items = []

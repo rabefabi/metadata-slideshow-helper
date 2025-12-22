@@ -6,3 +6,4 @@
   - If necessary, verify the UI via the Playwright MCP server
 - Document major decisions in `docs/` and keep responses concise with required link formatting.
 - When proposing steps or actions, make sure they are numerated, so that it's easier to respond
+- Bumping versions: Make sure that the versions are consistent across `pyproject.toml` and `custom_components/<component>/manifest.json`
