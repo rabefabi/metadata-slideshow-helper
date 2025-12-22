@@ -33,6 +33,7 @@
   - Picture cards can cache images even with cache-busting; the card may show `Unknown` and not auto-advance. Browser refresh or switching card type can help; the backend still cycles correctly.
 
 - **Quick commands**
+
   ```bash
   uv venv .venv --python 3.13
   uv sync --extra dev
@@ -41,5 +42,6 @@
   ```
 
 ### Lovelace usage
+
 - Prefer a Picture Entity card bound to `image.slideshow_helper`.
 - The image entity refreshes when `image_last_updated` changes; state now mirrors the timestamp so `last_changed` advances each cycle.

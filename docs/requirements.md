@@ -1,4 +1,5 @@
 # User Requirements
+
 - Publishable via HACS as a Home Assistant custom integration.
 - Provide a slideshow usable in dashboards, cycling images automatically.
 - Allow selecting a media directory inside Home Assistant.
