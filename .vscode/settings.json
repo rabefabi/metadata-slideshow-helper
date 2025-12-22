@@ -9,5 +9,8 @@
             "approveRequest": true,
             "approveResponse": false
         }
+    },
+    "chat.tools.terminal.autoApprove": {
+        "uv run pre-commit run --all-files": true,
     }
 }

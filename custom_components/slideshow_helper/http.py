@@ -11,6 +11,7 @@ from homeassistant.core import HomeAssistant
 
 _LOGGER = logging.getLogger(__name__)
 
+
 class SlideshowImageView(HomeAssistantView):
     """Serve slideshow images."""
 
@@ -18,9 +19,7 @@ class SlideshowImageView(HomeAssistantView):
     name = "api:slideshow_helper:image"
     requires_auth = False
 
-    async def get(
-        self, request: web.Request, entry_id: str, image_path: str
-    ) -> web.Response:
+    async def get(self, request: web.Request, entry_id: str, image_path: str) -> web.Response:
         """Return image bytes."""
 
         # Decode the image path (it will be URL-encoded)
@@ -30,7 +29,9 @@ class SlideshowImageView(HomeAssistantView):
         data = hass.data.get("slideshow_helper", {}).get(entry_id, {})
         media_dir = data.get("config", {}).get("media_dir")
 
-        _LOGGER.debug(f"HTTP view request: entry_id={entry_id}, image_path={image_path}, media_dir={media_dir}")
+        _LOGGER.debug(
+            f"HTTP view request: entry_id={entry_id}, image_path={image_path}, media_dir={media_dir}"
+        )
 
         if not media_dir:
             _LOGGER.error("Media directory not configured")

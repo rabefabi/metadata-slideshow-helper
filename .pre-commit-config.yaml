@@ -1,0 +1,22 @@
+repos:
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff
+        entry: uv
+        language: system
+        types_or: [python]
+        args: ["run", "ruff", "check", "--fix"]
+      - id: ruff-format
+        name: ruff-format
+        entry: uv
+        language: system
+        types_or: [python]
+        args: ["run", "ruff", "format"]
+      - id: mypy
+        name: mypy
+        entry: uv
+        language: system
+        types_or: [python]
+        args: ["run", "mypy", "custom_components/slideshow_helper"]
+        pass_filenames: false

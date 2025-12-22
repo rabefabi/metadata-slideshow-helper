@@ -32,7 +32,7 @@ class MediaScanner:
             # TODO: Log warning
             return results
 
-        # TODO: Check if pathlib glob 
+        # TODO: Check if pathlib glob
         for dirpath, _, filenames in os.walk(self.root):
             for fn in filenames:
                 ext = os.path.splitext(fn)[1].lower()

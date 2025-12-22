@@ -11,24 +11,32 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpda
 from .const import DOMAIN
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
+async def async_setup_entry(
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+) -> None:
     # If a coordinator is present in hass.data, use it to create sensors.
     data = hass.data.get(DOMAIN, {}).get(entry.entry_id, {})
     coordinator: DataUpdateCoordinator | None = data.get("coordinator")
     if coordinator:
-        async_add_entities([
-            SlideshowImageCountSensor(coordinator, entry.entry_id),
-            SlideshowCurrentImageSensor(coordinator, entry.entry_id),
-        ], True)
+        async_add_entities(
+            [
+                SlideshowImageCountSensor(coordinator, entry.entry_id),
+                SlideshowCurrentImageSensor(coordinator, entry.entry_id),
+            ],
+            True,
+        )
     else:
         async_add_entities([])
+
 
 class SlideshowImageCountSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, coordinator: DataUpdateCoordinator, entry_id: str):
         super().__init__(coordinator)
         self._attr_name = "Slideshow Image Count"
         self._attr_unique_id = f"{entry_id}_image_count"
-        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry_id)}, name="Slideshow Helper")
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry_id)}, name="Slideshow Helper"
+        )
         self._attr_icon = "mdi:image-multiple"
 
     @property
@@ -52,12 +60,15 @@ class SlideshowImageCountSensor(CoordinatorEntity, SensorEntity):
     def available(self) -> bool:
         return self.coordinator.last_update_success
 
+
 class SlideshowCurrentImageSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, coordinator: DataUpdateCoordinator, entry_id: str):
         super().__init__(coordinator)
         self._attr_name = "Slideshow Current Image"
         self._attr_unique_id = f"{entry_id}_current_image"
-        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry_id)}, name="Slideshow Helper")
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry_id)}, name="Slideshow Helper"
+        )
         self._attr_icon = "mdi:image"
 
     @property

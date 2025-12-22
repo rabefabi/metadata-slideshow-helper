@@ -1,4 +1,5 @@
 """Slideshow Helper integration."""
+
 from __future__ import annotations
 
 import logging
@@ -25,8 +26,10 @@ from .scanner import MediaScanner
 _LOGGER = logging.getLogger(__name__)
 PLATFORMS = ["sensor", "image"]
 
+
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     return True
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
@@ -44,7 +47,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         CONF_REFRESH_INTERVAL,
         entry.options.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL),
     )
-    cycle_interval = entry.data.get(CONF_CYCLE_INTERVAL, entry.options.get(CONF_CYCLE_INTERVAL, DEFAULT_CYCLE_INTERVAL))
+    cycle_interval = entry.data.get(
+        CONF_CYCLE_INTERVAL, entry.options.get(CONF_CYCLE_INTERVAL, DEFAULT_CYCLE_INTERVAL)
+    )
 
     # Cycling state
     cycle_index: int = 0
@@ -125,6 +130,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await _helper.async_register_services(hass)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
+
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)

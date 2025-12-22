@@ -3,9 +3,8 @@
 - **Dependency and tooling runner:** Use `uv` for all local dev tasks.
   - Create venv: `uv venv .venv --python 3.13`
   - Install app + dev deps from `pyproject.toml`: `uv sync --extra dev`
-  - Lint (with autofix): `uv run ruff check --fix`
-  - Types: `uv run mypy custom_components/slideshow_helper`
-- **Ruff configuration:** Import ordering and other lint rules are enforced via the built-in sorter; no separate `isort` config is needed.
+  - Static checks (lint, types, formatting): `uv run pre-commit run --all-files`
+  - Pre-commit install: `uv run pre-commit install`
 
 - **Quick commands**
 
