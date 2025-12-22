@@ -71,8 +71,5 @@ async def async_register_services(hass: HomeAssistant):
         return cast(ServiceResponse, resp)
 
     hass.services.async_register(
-        DOMAIN,
-        "get_image_urls",
-        handle_get_image_urls,
-        supports_response=SupportsResponse.ONLY
+        DOMAIN, "get_image_urls", handle_get_image_urls, supports_response=SupportsResponse.ONLY
     )

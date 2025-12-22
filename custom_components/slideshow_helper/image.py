@@ -47,7 +47,9 @@ class SlideshowImageEntity(CoordinatorEntity, ImageEntity):
         self._entry_id = entry_id
         self._media_dir = media_dir
         self._attr_unique_id = f"{entry_id}_slideshow_image"
-        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry_id)}, name="Slideshow Helper")
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry_id)}, name="Slideshow Helper"
+        )
         # ImageEntity expects access_tokens as a deque for state attributes
         self.access_tokens: deque[str] = deque()
         self._ensure_token()
@@ -115,12 +117,17 @@ class SlideshowImageEntity(CoordinatorEntity, ImageEntity):
             except Exception as err:  # pragma: no cover - unexpected I/O errors
                 _LOGGER.error("Error reading image %s: %s", path, err)
             return None
+
         try:
-            image_bytes = cast(bytes | None, await self.hass.async_add_executor_job(_read, current_path))
+            image_bytes = cast(
+                bytes | None, await self.hass.async_add_executor_job(_read, current_path)
+            )
             if image_bytes is None:
                 _LOGGER.error("async_image failed to read data for %s", current_path)
             elif len(image_bytes) == 0:
-                _LOGGER.error("async_image read 0 bytes from %s (file exists but empty)", current_path)
+                _LOGGER.error(
+                    "async_image read 0 bytes from %s (file exists but empty)", current_path
+                )
             return image_bytes
         except Exception as err:  # pragma: no cover - unexpected executor errors
             _LOGGER.exception("async_image executor failure for %s: %s", current_path, err)
@@ -152,7 +159,3 @@ class SlideshowImageEntity(CoordinatorEntity, ImageEntity):
             self._attr_image_last_updated = dt_util.utcnow()
             self._last_path = current_path
         super()._handle_coordinator_update()
-
-
-
-
