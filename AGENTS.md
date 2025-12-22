@@ -2,6 +2,7 @@
 
 ## Coding & Tooling Style
 
+- You have access to the latest documentation via the Context7 MCP plugin - use it to look up the current state of the art for all libraries and frameworks. 
 - Add comments only when helpful for non-obvious logic.
 - Use the editor linting and formatting tools
 - Tooling: use `ruff` for linting/imports,`mypy` with `homeassistant-stubs` if type checks needed.

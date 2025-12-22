@@ -1,13 +1,23 @@
 {
-    "servers": {
-        "playwright": {
-            "command": "npx",
-            "args": [
-                "-y",
-                "@playwright/mcp@latest",
-                "--browser",
-                "firefox"
-            ]
-        }
-    }
+	"servers": {
+		"playwright": {
+			"command": "npx",
+			"args": [
+				"-y",
+				"@playwright/mcp@latest",
+				"--browser",
+				"firefox"
+			],
+			"type": "stdio"
+		},
+		"io.github.upstash/context7": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"@upstash/context7-mcp@1.0.31"
+			],
+			"gallery": "https://api.mcp.github.com",
+			"version": "1.0.31"
+		}
+	}
 }
