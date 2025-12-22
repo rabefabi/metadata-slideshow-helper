@@ -1,0 +1,13 @@
+{
+    "chat.tools.urls.autoApprove": {
+        "https://developers.home-assistant.io": {
+            "approveRequest": false,
+            "approveResponse": true
+        },
+        "https://*.home-assistant.io": true,
+        "https://hacs.xyz": {
+            "approveRequest": true,
+            "approveResponse": false
+        }
+    }
+}
