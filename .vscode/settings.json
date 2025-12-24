@@ -12,5 +12,10 @@
     },
     "chat.tools.terminal.autoApprove": {
         "uv run pre-commit run --all-files": true,
-    }
+    },
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
 }
