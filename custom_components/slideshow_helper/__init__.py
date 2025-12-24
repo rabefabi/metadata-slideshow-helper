@@ -2,26 +2,17 @@
 
 from __future__ import annotations
 
+# ruff: noqa: PLC0415 (import-outside-toplevel) - avoid heavy imports on package import
 import logging
 import os
 import time
 from datetime import timedelta
+from typing import TYPE_CHECKING
 
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-
-from . import helper as _helper
-from .const import (
-    CONF_CYCLE_INTERVAL,
-    CONF_MEDIA_DIR,
-    CONF_REFRESH_INTERVAL,
-    DEFAULT_CYCLE_INTERVAL,
-    DEFAULT_REFRESH_INTERVAL,
-    DOMAIN,
-)
-from .http import SlideshowImageView
-from .scanner import MediaScanner
+# Only import Home Assistant types for type checking; runtime imports occur in functions
+if TYPE_CHECKING:  # pragma: no cover - typing only
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.core import HomeAssistant
 
 _LOGGER = logging.getLogger(__name__)
 PLATFORMS = ["sensor", "image"]
@@ -31,7 +22,22 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     return True
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  # noqa: PLR0915 (too many statements) - consider refactoring if this function grows further
+    # Import integration modules at runtime to avoid heavy imports on package import
+    from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+
+    from . import helper as _helper
+    from .const import (
+        CONF_CYCLE_INTERVAL,
+        CONF_MEDIA_DIR,
+        CONF_REFRESH_INTERVAL,
+        DEFAULT_CYCLE_INTERVAL,
+        DEFAULT_REFRESH_INTERVAL,
+        DOMAIN,
+    )
+    from .http import SlideshowImageView
+    from .scanner import MediaScanner
+
     hass.data.setdefault(DOMAIN, {})
     _LOGGER.info("slideshow_helper starting")
 
@@ -42,7 +48,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Create coordinator that scans media directory
     media_dir = entry.data.get(CONF_MEDIA_DIR)
-    # Note: refresh_interval currently not used by coordinator
+    # TODO: refresh_interval currently not used by coordinator
     _ = entry.data.get(
         CONF_REFRESH_INTERVAL,
         entry.options.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL),
@@ -138,6 +144,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    from .const import DOMAIN
+
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)
