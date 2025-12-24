@@ -57,10 +57,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     cached_items: list = []
     last_scan: float = 0.0
     scan_interval: float = 300.0  # Rescan filesystem every 5 minutes
+    # TODO: Verify if flag is necesary, or whether the check frequency can be reduced
+    no_images_warned: bool = False  # Track if we've already warned about no images
 
     async def async_update_data():
         """Fetch data from media scanner and handle cycling."""
-        nonlocal last_cycle, cycle_index, cached_items, last_scan
+        nonlocal last_cycle, cycle_index, cached_items, last_scan, no_images_warned
 
         current_time = time.time()
 
@@ -75,8 +77,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             last_scan = current_time
             if items:
                 _LOGGER.info(f"Found {len(items)} images")
-            else:
+                no_images_warned = False  # Reset warning flag when images are found
+            elif not no_images_warned:
+                # Only log warning once when no images are found
                 _LOGGER.warning(f"No images found in {media_dir}")
+                no_images_warned = True
         else:
             items = cached_items
 
