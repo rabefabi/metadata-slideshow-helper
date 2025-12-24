@@ -14,8 +14,9 @@
 
 - Document major decisions in `docs/` and keep responses concise with required link formatting.
 
-## User Interaction
+## Human Interaction
 
+- Use a direct communication style, don't use words like "powerful", "comprehensive" etc.
 - When proposing steps or actions, make sure they are numerated, so that it's easier to respond
 
 ## Git Commits, Versioning & Releases
