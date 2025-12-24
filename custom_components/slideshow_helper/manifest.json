@@ -5,7 +5,6 @@
   "documentation": "https://github.com/rabefabi/metadata-slideshow-helper",
   "issue_tracker": "https://github.com/rabefabi/metadata-slideshow-helper/issues",
   "requirements": [
-    "Pillow>=10.0.0",
     "exifread>=3.0.0",
     "piexif>=1.1.3",
     "exif>=1.6.0"

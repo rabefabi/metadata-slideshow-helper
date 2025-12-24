@@ -5,7 +5,7 @@ requires-python = ">=3.13"
 
 [project.optional-dependencies]
 dev = ["ruff", "mypy", "homeassistant-stubs", "pre-commit"]
-test = ["pytest>=8.0", "pytest-asyncio>=0.23", "Pillow>=10.0", "piexif>=1.1"]
+test = ["pytest>=8.0", "pytest-asyncio>=0.23", "Pillow>=10.0", "piexif>=1.1", "exifread>=3.5.1"]
 
 [tool.ruff]
 line-length = 100

@@ -6,7 +6,6 @@ from dataclasses import dataclass
 
 import exifread
 import piexif
-from PIL import Image  # noqa: F401 (placeholder for future use)
 
 # Suppress exifread warnings for unrecognized formats
 logging.getLogger("exifread").setLevel(logging.ERROR)
