@@ -97,3 +97,38 @@ Goals:
 - **Sidecar support**: If XMP sidecar support is needed in the future, consider exiftool via subprocess as a fallback (though this requires Perl to be available in the HA container).
 - **Format support**: For RAW formats (CR2, NEF, ARW), XMP sidecars are the standard approach, but most HA users will likely work with JPEG/PNG files from their photo libraries.[^1][^4]
 - **XMP parsing**: Pillow's `getxmp()` returns a dictionary with XMP data. Keys follow XMP namespace conventions (e.g., `dc:subject` for tags, `xmp:Rating` for ratings).
+
+## Implementation Decision
+
+**Chosen approach**: Pillow + defusedxml for embedded XMP reading
+
+**Rationale**:
+
+1. **HA compatibility**: Pillow is already available in Home Assistant; defusedxml is pure Python with no system dependencies
+2. **YAGNI principle**: No fallback to raw byte parsing—Pillow with defusedxml handles all our test cases
+3. **Thread-safe**: Safe for concurrent use in HA event loop
+4. **Sufficient coverage**: Reads embedded XMP from JPEG/PNG (the common formats in photo libraries)
+
+**Technical details**:
+
+- Pillow's `getxmp()` requires defusedxml to parse XMP; returns nested dict: `{'xmpmeta': {'RDF': {'Description': {...}}}}`
+- Tags extracted from: `Description.subject.Bag.li` (string or list)
+- Rating extracted from: `Description.Rating` (string converted to int)
+- Also reads EXIF rating via piexif for JPEG files as fallback
+
+**Trade-offs**:
+
+- ✅ No external binary dependencies (Perl, libexempi, Exiv2)
+- ✅ Works with embedded XMP in JPEG/PNG
+- ❌ No XMP sidecar support (not needed for initial use case)
+- ❌ No RAW format support (users expected to have JPEG exports)
+
+**Dependencies added**:
+
+- `defusedxml>=0.7` added to test extras in pyproject.toml
+
+**Files modified**:
+
+- `custom_components/slideshow_helper/scanner.py`: Parse Pillow's XMP dict format
+- `tests/image_generator.py`: Embed XMP packets in test images (JPEG APP1, PNG iTXt)
+- `pyproject.toml`: Added defusedxml test dependency

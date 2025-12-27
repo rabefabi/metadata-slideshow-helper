@@ -13,6 +13,7 @@ from pathlib import Path
 
 import piexif
 from PIL import Image, ImageDraw, ImageFont
+from PIL.PngImagePlugin import PngInfo
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -111,22 +112,36 @@ def create_test_image(spec: TestImageSpec, output_path: Path) -> None:
         draw.text((x + 2, y + 2), spec.text, fill=(0, 0, 0), font=font)
         draw.text((x, y), spec.text, fill=(255, 255, 255), font=font)
 
-    # Save the image
-    img.save(output_path, quality=95)
+    # Build XMP packet for tags/ratings
+    xmp_bytes = _build_xmp_packet(spec.tags, spec.rating)
 
-    # Add EXIF metadata (for JPEG files only)
+    # Save the image (PNG can embed XMP via iTXt)
+    if output_path.suffix.lower() == ".png":
+        pnginfo = PngInfo()
+        pnginfo.add_itxt("XML:com.adobe.xmp", xmp_bytes.decode("utf-8"))
+        img.save(output_path, quality=95, pnginfo=pnginfo)
+    else:
+        img.save(output_path, quality=95)
+
+    # Add EXIF metadata and XMP (for JPEG files only)
     if output_path.suffix.lower() in {".jpg", ".jpeg"}:
         try:
-            # Create EXIF data with rating
-            exif_dict: dict[str, dict|None] = {"0th": {}, "Exif": {}, "GPS": {}, "1st": {}, "thumbnail": None}
+            exif_dict: dict[str, dict | None] = {
+                "0th": {},
+                "Exif": {},
+                "GPS": {},
+                "1st": {},
+                "thumbnail": None,
+            }
 
-            # Set rating in EXIF
+            # Set rating in EXIF (mirrors xmp:Rating for compatibility)
             if spec.rating > 0:
-                exif_dict["0th"][piexif.ImageIFD.Rating] = spec.rating # type: ignore
+                exif_dict["0th"][piexif.ImageIFD.Rating] = spec.rating  # type: ignore
 
-            # Convert and insert EXIF data
             exif_bytes = piexif.dump(exif_dict)
             piexif.insert(exif_bytes, str(output_path))
+
+            _embed_xmp_jpeg(output_path, xmp_bytes)
 
             _LOGGER.info(
                 "Created test image: %s (rating=%d, tags=%s)",
@@ -135,7 +150,7 @@ def create_test_image(spec: TestImageSpec, output_path: Path) -> None:
                 spec.tags,
             )
         except Exception as e:
-            _LOGGER.error("Failed to write EXIF metadata for %s: %s", output_path.name, e)
+            _LOGGER.error("Failed to write EXIF/XMP metadata for %s: %s", output_path.name, e)
 
 
 def generate_test_images(
@@ -179,6 +194,53 @@ def cleanup_test_images(output_dir: Path) -> None:
             count += 1
 
     _LOGGER.info("Cleaned up %d test images from %s", count, output_dir)
+
+
+def _build_xmp_packet(tags: list[str], rating: int) -> bytes:
+    """Build a minimal XMP packet containing tags and rating.
+
+    The packet uses dc:subject for keywords and xmp:Rating for stars, which Pillow can read
+    via getxmp() in tests.
+    """
+
+    # Build <rdf:Bag> of dc:subject entries
+    bag_items = "".join(f"<rdf:li>{tag}</rdf:li>" for tag in tags)
+    dc_subject = f"<dc:subject><rdf:Bag>{bag_items}</rdf:Bag></dc:subject>" if tags else ""
+
+    rating_str = f"<xmp:Rating>{rating}</xmp:Rating>" if rating else ""
+
+    description = f'<rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xmp="http://ns.adobe.com/xap/1.0/">{dc_subject}{rating_str}</rdf:Description>'
+
+    xmp = (
+        '<?xpacket begin="\ufeff" id="W5M0MpCehiHzreSzNTczkc9d"?>'
+        '<x:xmpmeta xmlns:x="adobe:ns:meta/">'
+        '<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">'
+        f"{description}"
+        "</rdf:RDF>"
+        "</x:xmpmeta>"
+        '<?xpacket end="w"?>'
+    )
+
+    return xmp.encode("utf-8")
+
+
+def _embed_xmp_jpeg(path: Path, xmp_bytes: bytes) -> None:
+    """Embed XMP packet into a JPEG as an APP1 segment after SOI.
+
+    This avoids extra dependencies and keeps tests self-contained.
+    """
+
+    data = path.read_bytes()
+    if not data.startswith(b"\xff\xd8"):
+        raise ValueError("Not a JPEG file")
+
+    xmp_header = b"http://ns.adobe.com/xap/1.0/\x00"
+    app1_payload = xmp_header + xmp_bytes
+    app1_length = len(app1_payload) + 2  # includes length bytes themselves
+    app1 = b"\xff\xe1" + app1_length.to_bytes(2, "big") + app1_payload
+
+    new_data = b"\xff\xd8" + app1 + data[2:]
+    path.write_bytes(new_data)
 
 
 if __name__ == "__main__":

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 from dataclasses import dataclass
 
 import exifread
 import piexif
+from PIL import Image
 
 # Suppress exifread warnings for unrecognized formats
 logging.getLogger("exifread").setLevel(logging.ERROR)
@@ -57,6 +59,28 @@ class MediaScanner:
         date = None
         ext = os.path.splitext(path)[1].lower()
 
+        # Try to read XMP (embedded) via Pillow (requires defusedxml)
+        try:
+            with Image.open(path) as im:
+                xmp_raw = im.getxmp()
+            if isinstance(xmp_raw, dict):
+                # Pillow with defusedxml returns nested dict: {'xmpmeta': {'RDF': {'Description': {...}}}}
+                desc = xmp_raw.get("xmpmeta", {}).get("RDF", {}).get("Description", {})
+                if desc:
+                    # Extract tags from subject/Bag/li
+                    subj_bag = desc.get("subject", {}).get("Bag", {}).get("li")
+                    if isinstance(subj_bag, list):
+                        tags = [str(t) for t in subj_bag]
+                    elif isinstance(subj_bag, str):
+                        tags = [subj_bag]
+
+                    # Extract rating
+                    rate = desc.get("Rating")
+                    if isinstance(rate, (int, str)):
+                        with contextlib.suppress(ValueError):
+                            rating = int(rate)
+        except Exception:
+            pass
         # Only try to read EXIF from JPEG files
         if ext in {".jpg", ".jpeg"}:
             # Verify file is accessible and readable
