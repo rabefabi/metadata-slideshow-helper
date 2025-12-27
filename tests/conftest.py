@@ -41,7 +41,6 @@ def test_images(test_images_dir: Path) -> Generator[list[Path]]:
             assert len(results) == len(test_images)
     """
 
-
     created_paths = generate_test_images(test_images_dir)
     yield created_paths
     # Images are intentionally not cleaned up to persist across test runs
@@ -66,12 +65,8 @@ def sample_image_by_rating(test_images_dir: Path, test_images: list[Path]):
     """
 
     def _get_by_rating(rating: int) -> list[Path]:
-
-
         return [
-            test_images_dir / spec.filename
-            for spec in TEST_IMAGE_SPECS
-            if spec.rating == rating
+            test_images_dir / spec.filename for spec in TEST_IMAGE_SPECS if spec.rating == rating
         ]
 
     return _get_by_rating
@@ -95,12 +90,6 @@ def sample_image_by_tag(test_images_dir: Path, test_images: list[Path]):
     """
 
     def _get_by_tag(tag: str) -> list[Path]:
-
-
-        return [
-            test_images_dir / spec.filename
-            for spec in TEST_IMAGE_SPECS
-            if tag in spec.tags
-        ]
+        return [test_images_dir / spec.filename for spec in TEST_IMAGE_SPECS if tag in spec.tags]
 
     return _get_by_tag

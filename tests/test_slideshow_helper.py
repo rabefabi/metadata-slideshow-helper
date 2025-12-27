@@ -11,9 +11,10 @@ async def test_filter_by_rating(test_images: list[Path]) -> None:
     all_items = scanner.scan()
 
     # Filter for 4+ stars
-    filtered = apply_filters(all_items, [], [], min_rating=4)
-    assert all(item.rating >= 4 for item in filtered)
-    assert any(item.rating == 5 for item in filtered)  # Ensure some 5-star images are included
+    MIN_RATING = 4
+    filtered = apply_filters(all_items, [], [], min_rating=MIN_RATING)
+    assert all(item.rating >= MIN_RATING for item in filtered)
+    assert any(item.rating > MIN_RATING for item in filtered)  # Ensure higher ratings are included
     assert len(filtered) < len(all_items)
 
 

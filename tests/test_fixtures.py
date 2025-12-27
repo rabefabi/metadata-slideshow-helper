@@ -45,5 +45,3 @@ async def test_media_scanner_with_test_images(test_images: list[Path]) -> None:
     ratings = [r.rating for r in results]
     assert max(ratings) == 5  # noqa: PLR2004 magic number is accepted here
     assert min(ratings) == 0
-
-
