@@ -29,14 +29,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
     from . import helper as _helper
     from .const import (
         CONF_CYCLE_INTERVAL,
+        CONF_EXCLUDE_TAGS,
+        CONF_INCLUDE_TAGS,
         CONF_MEDIA_DIR,
+        CONF_MIN_RATING,
         CONF_REFRESH_INTERVAL,
         DEFAULT_CYCLE_INTERVAL,
         DEFAULT_REFRESH_INTERVAL,
         DOMAIN,
     )
     from .http import SlideshowImageView
-    from .scanner import MediaScanner
+    from .scanner import MediaScanner, apply_filters
 
     hass.data.setdefault(DOMAIN, {})
     _LOGGER.info("slideshow_helper starting")
@@ -49,13 +52,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
     # Create coordinator that scans media directory
     media_dir = entry.data.get(CONF_MEDIA_DIR)
     # TODO: refresh_interval currently not used by coordinator
-    _ = entry.data.get(
+    _ = entry.options.get(
         CONF_REFRESH_INTERVAL,
-        entry.options.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL),
+        entry.data.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL),
     )
-    cycle_interval = entry.data.get(
-        CONF_CYCLE_INTERVAL, entry.options.get(CONF_CYCLE_INTERVAL, DEFAULT_CYCLE_INTERVAL)
+    # Prefer options over data (options are updated via UI after initial setup)
+    cycle_interval = entry.options.get(
+        CONF_CYCLE_INTERVAL, entry.data.get(CONF_CYCLE_INTERVAL, DEFAULT_CYCLE_INTERVAL)
     )
+
+    # Read filter settings from config entry (data or options)
+    # Options should override data; fallback to data only if option missing
+    min_rating = entry.options.get(CONF_MIN_RATING, entry.data.get(CONF_MIN_RATING, 0))
+    include_tags_str = entry.options.get(CONF_INCLUDE_TAGS, entry.data.get(CONF_INCLUDE_TAGS, ""))
+    exclude_tags_str = entry.options.get(CONF_EXCLUDE_TAGS, entry.data.get(CONF_EXCLUDE_TAGS, ""))
+
+    # Parse comma-separated tags
+    include_tags = [t.strip() for t in include_tags_str.split(",") if t.strip()]
+    exclude_tags = [t.strip() for t in exclude_tags_str.split(",") if t.strip()]
 
     # Cycling state
     cycle_index: int = 0
@@ -78,15 +92,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
         elif not cached_items or (current_time - last_scan) >= scan_interval:
             _LOGGER.info(f"Scanning media_dir: {media_dir}")
             scanner = MediaScanner(media_dir)
-            items = await hass.async_add_executor_job(scanner.scan)
+            all_items = await hass.async_add_executor_job(scanner.scan)
+            # Apply filters based on configuration
+            items = apply_filters(all_items, include_tags, exclude_tags, min_rating)
             cached_items = items
             last_scan = current_time
             if items:
-                _LOGGER.info(f"Found {len(items)} images")
+                _LOGGER.info(
+                    f"Found {len(items)} images (filtered from {len(all_items)} total, "
+                    f"min_rating={min_rating}, include_tags={include_tags}, exclude_tags={exclude_tags})"
+                )
                 no_images_warned = False  # Reset warning flag when images are found
             elif not no_images_warned:
                 # Only log warning once when no images are found
-                _LOGGER.warning(f"No images found in {media_dir}")
+                _LOGGER.warning(
+                    f"No images found in {media_dir} after filtering "
+                    f"(scanned {len(all_items)}, min_rating={min_rating}, "
+                    f"include_tags={include_tags}, exclude_tags={exclude_tags})"
+                )
                 no_images_warned = True
         else:
             items = cached_items
@@ -137,10 +160,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
         "coordinator": coordinator,
     }
 
+    # Listen for options updates and force rescan
+    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
+
     # Register services on first setup
     await _helper.async_register_services(hass)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
+
+
+async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Reload integration when options change."""
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
