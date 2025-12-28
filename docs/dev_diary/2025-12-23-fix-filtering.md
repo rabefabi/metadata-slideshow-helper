@@ -8,7 +8,7 @@ Goals:
 
 - Current implementation only considers ratings, not tags
 - Tags are very inconsistent across platforms, tools and formats (EXIF, XMP, IPTC)
-  - [ ] Considered all the differnt tag storage formats
+  - [x] Considered all the differnt tag storage formats
     - XMP sidecar files
     - XMP embedded
     - ...?
