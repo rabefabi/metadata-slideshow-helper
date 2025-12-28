@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.6 - 2025-12-28
+
+- Feat: Add XMP tag filtering support with comprehensive metadata handling
+- Fix: Actually read configuration from Home Assistant
+- Fix: Reduce dependencies, order them properly
+- Tests: Add integration tests for image filtering by rating and tags
+- Tests: Add fixtures to generate test images
+- Chore: Fix ruff linting warnings
+- Build: Add learnings regarding dependencies and error handling
+
 ## 0.1.5 - 2025-12-23
 
 - CI: Added GitHub Actions workflow to run `pre-commit` with `uv` on PRs targeting `main`; added concurrency to cancel superseded runs and avoid duplicates.
