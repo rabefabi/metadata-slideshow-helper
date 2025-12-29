@@ -1,3 +1,8 @@
 {
-  "title": "Metadata Slideshow Helper"
+  "title": "Metadata Slideshow Helper",
+  "config": {
+    "error": {
+      "invalid_interval": "Refresh interval must be greater than cycle interval (cycle: {cycle}s, refresh: {refresh}s). Refresh acts as a lower bound; actual rescan occurs when the next cycle is due."
+    }
+  }
 }

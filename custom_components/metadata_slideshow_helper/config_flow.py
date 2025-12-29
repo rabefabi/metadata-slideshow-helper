@@ -43,8 +43,34 @@ class SlideshowHelperConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             }
         )
 
+    def _validate_intervals(self, user_input: dict[str, Any]) -> tuple[bool, int, int] | None:
+        """Validate refresh > cycle intervals. Return (is_valid, cycle, refresh) or None if invalid."""
+        cycle = int(user_input.get(CONF_CYCLE_INTERVAL, DEFAULT_CYCLE_INTERVAL))
+        refresh = int(user_input.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL))
+        if refresh <= cycle:
+            return None
+        return (True, cycle, refresh)
+
+    def _show_interval_error(
+        self, step_id: str, user_input: dict[str, Any]
+    ) -> config_entries.ConfigFlowResult:
+        """Show form with interval validation error."""
+        cycle = int(user_input.get(CONF_CYCLE_INTERVAL, DEFAULT_CYCLE_INTERVAL))
+        refresh = int(user_input.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL))
+        return self.async_show_form(
+            step_id=step_id,
+            data_schema=self._build_schema(user_input),
+            errors={"base": "invalid_interval"},
+            description_placeholders={
+                "cycle": str(cycle),
+                "refresh": str(refresh),
+            },
+        )
+
     async def async_step_user(self, user_input: dict[str, Any] | None = None):
         if user_input is not None:
+            if not self._validate_intervals(user_input):
+                return self._show_interval_error("user", user_input)
             return self.async_create_entry(title=user_input.get(CONF_NAME, TITLE), data=user_input)
 
         return self.async_show_form(step_id="user", data_schema=self._build_schema())
@@ -53,6 +79,8 @@ class SlideshowHelperConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         config_entry = self._get_reconfigure_entry()
 
         if user_input is not None:
+            if not self._validate_intervals(user_input):
+                return self._show_interval_error("reconfigure", user_input)
             return self.async_update_reload_and_abort(
                 config_entry,
                 data_updates=user_input,
