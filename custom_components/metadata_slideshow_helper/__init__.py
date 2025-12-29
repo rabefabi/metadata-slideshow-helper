@@ -55,12 +55,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
     last_cycle: float = time.time()
     cached_items: list = []
     last_scan: float = 0.0
+    last_total_count: int
     # Track if we've already warned about no images to avoid log spam
     no_images_warned: bool = False
 
     async def async_update_data():
         """Fetch data from media scanner and handle cycling."""
-        nonlocal last_cycle, cycle_index, cached_items, last_scan, no_images_warned
+        nonlocal \
+            last_cycle, \
+            cycle_index, \
+            cached_items, \
+            last_scan, \
+            last_total_count, \
+            no_images_warned
 
         current_time = time.time()
 
@@ -75,6 +82,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
             items = apply_filters(all_items, include_tags, exclude_tags, min_rating)
             cached_items = items
             last_scan = current_time
+            last_total_count = len(all_items)
             if items:
                 _LOGGER.info(
                     f"Found {len(items)} images (filtered from {len(all_items)} total, "
@@ -112,6 +120,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
         return {
             "images": items,
             "count": len(items),
+            "total_count": last_total_count,
             "current_path": current_path,
             "cycle_index": cycle_index,
         }

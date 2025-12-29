@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Entities: Image count marked as Diagnostic; added Slideshow Status sensor with attributes
+- Attributes: Expose `filtered_image_count` and `total_image_count` for quick filter visibility
+- Cleanup: Removed unused `exif` runtime dependency from manifest
+
 ## 0.1.6 - 2025-12-28
 
 - Feat: Add XMP tag filtering support with comprehensive metadata handling
