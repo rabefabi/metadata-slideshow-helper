@@ -17,16 +17,11 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
 _LOGGER = logging.getLogger(__name__)
 PLATFORMS = ["sensor", "image"]
 
-# FIXME: Why is this async setup needed at all?
-async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    return True
-
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  # noqa: PLR0915 (too many statements) - consider refactoring if this function grows further
     # Import integration modules at runtime to avoid heavy imports on package import
     from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-    from . import helper as _helper
     from .const import (
         CONF_CYCLE_INTERVAL,
         CONF_EXCLUDE_TAGS,
@@ -38,17 +33,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
         DEFAULT_REFRESH_INTERVAL,
         DOMAIN,
     )
-    from .http import SlideshowImageView
     from .scanner import MediaScanner, apply_filters
 
     hass.data.setdefault(DOMAIN, {})
     _LOGGER.info(f"{DOMAIN} starting")
-
-    # FIXME: Is the http view really necessary?
-    # Register HTTP view for serving images (once per domain)
-    if "http_view_registered" not in hass.data[DOMAIN]:
-        hass.http.register_view(SlideshowImageView())
-        hass.data[DOMAIN]["http_view_registered"] = True
 
     # Create coordinator that scans media directory
     media_dir = entry.data.get(CONF_MEDIA_DIR, "")
@@ -157,8 +145,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
     # Listen for options updates and force rescan
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
-    # Register services on first setup
-    await _helper.async_register_services(hass)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 

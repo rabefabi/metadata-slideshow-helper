@@ -33,19 +33,19 @@ class SlideshowHelperConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Optional(CONF_INCLUDE_TAGS, default=values.get(CONF_INCLUDE_TAGS, "")): str,
                 vol.Optional(CONF_EXCLUDE_TAGS, default=values.get(CONF_EXCLUDE_TAGS, "")): str,
                 vol.Optional(
-                    CONF_CYCLE_INTERVAL, default=values.get(CONF_CYCLE_INTERVAL, DEFAULT_CYCLE_INTERVAL)
+                    CONF_CYCLE_INTERVAL,
+                    default=values.get(CONF_CYCLE_INTERVAL, DEFAULT_CYCLE_INTERVAL),
                 ): int,
                 vol.Optional(
-                    CONF_REFRESH_INTERVAL, default=values.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL)
+                    CONF_REFRESH_INTERVAL,
+                    default=values.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL),
                 ): int,
             }
         )
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None):
         if user_input is not None:
-            return self.async_create_entry(
-                title=user_input.get(CONF_NAME, TITLE), data=user_input
-            )
+            return self.async_create_entry(title=user_input.get(CONF_NAME, TITLE), data=user_input)
 
         return self.async_show_form(step_id="user", data_schema=self._build_schema())
 
