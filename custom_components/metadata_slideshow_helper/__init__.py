@@ -4,7 +4,6 @@ from __future__ import annotations
 
 # ruff: noqa: PLC0415 (import-outside-toplevel) - avoid heavy imports on package import
 import logging
-import os
 import time
 from datetime import timedelta
 from typing import TYPE_CHECKING
@@ -40,8 +39,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
 
     # Create coordinator that scans media directory
     media_dir = entry.data.get(CONF_MEDIA_DIR, "")
-    # TODO: refresh_interval currently not used by coordinator
-    _ = entry.data.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL)
+    refresh_interval = entry.data.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL)
     cycle_interval = entry.data.get(CONF_CYCLE_INTERVAL, DEFAULT_CYCLE_INTERVAL)
 
     min_rating = entry.data.get(CONF_MIN_RATING, 0)
@@ -57,9 +55,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
     last_cycle: float = time.time()
     cached_items: list = []
     last_scan: float = 0.0
-    scan_interval: float = 300.0  # Rescan filesystem every 5 minutes
-    # TODO: Verify if flag is necesary, or whether the check frequency can be reduced
-    no_images_warned: bool = False  # Track if we've already warned about no images
+    # Track if we've already warned about no images to avoid log spam
+    no_images_warned: bool = False
 
     async def async_update_data():
         """Fetch data from media scanner and handle cycling."""
@@ -70,7 +67,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
         # Only rescan filesystem periodically, not every update
         if not media_dir:
             items = []
-        elif not cached_items or (current_time - last_scan) >= scan_interval:
+        elif not cached_items or (current_time - last_scan) >= float(refresh_interval):
             _LOGGER.info(f"Scanning media_dir: {media_dir}")
             scanner = MediaScanner(media_dir)
             all_items = await hass.async_add_executor_job(scanner.scan)
@@ -109,30 +106,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
         if items:
             cycle_index = cycle_index % len(items)
             current_path = items[cycle_index].path
-            relative_path = os.path.relpath(current_path, media_dir)
-            # Encode path and use custom view URL
-            encoded_path = relative_path.replace("/", "_SLASH_")
-            # Add cache-buster so Lovelace cards refresh when cycling
-            current_url = f"/api/{DOMAIN}/{entry.entry_id}/{encoded_path}?v={cycle_index}"
         else:
             current_path = None
-            current_url = None
 
         return {
             "images": items,
             "count": len(items),
             "current_path": current_path,
-            "current_url": current_url,
             "cycle_index": cycle_index,
         }
 
+    # Coordinator update frequency should be frequent enough to handle cycling,
+    # while respecting the configured refresh interval.
     coordinator = DataUpdateCoordinator(
         hass,
         _LOGGER,
         name=f"{DOMAIN}_{entry.entry_id}",
         update_method=async_update_data,
-        # FIXME: Doesn't the update interval need to match the cycle or the refresh interval?
-        update_interval=timedelta(seconds=1),  # Check every second for cycling
+        update_interval=timedelta(seconds=cycle_interval),
     )
 
     await coordinator.async_config_entry_first_refresh()
