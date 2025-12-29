@@ -40,15 +40,6 @@ class SlideshowImageCountSensor(CoordinatorEntity, SensorEntity):
         return (self.coordinator.data or {}).get("count", 0)
 
     @property
-    def extra_state_attributes(self):
-        data = self.coordinator.data or {}
-        images = data.get("images", [])
-        return {
-            "total_images": data.get("count", 0),
-            "sample_images": [img.path for img in images[:5]],
-        }
-
-    @property
     def should_poll(self) -> bool:
         return False
 
