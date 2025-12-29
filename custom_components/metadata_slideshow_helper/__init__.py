@@ -17,7 +17,7 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
 _LOGGER = logging.getLogger(__name__)
 PLATFORMS = ["sensor", "image"]
 
-
+# FIXME: Why is this async setup needed at all?
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     return True
 
@@ -44,28 +44,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
     hass.data.setdefault(DOMAIN, {})
     _LOGGER.info(f"{DOMAIN} starting")
 
+    # FIXME: Is the http view really necessary?
     # Register HTTP view for serving images (once per domain)
     if "http_view_registered" not in hass.data[DOMAIN]:
         hass.http.register_view(SlideshowImageView())
         hass.data[DOMAIN]["http_view_registered"] = True
 
     # Create coordinator that scans media directory
-    media_dir = entry.data.get(CONF_MEDIA_DIR)
+    media_dir = entry.data.get(CONF_MEDIA_DIR, "")
     # TODO: refresh_interval currently not used by coordinator
-    _ = entry.options.get(
-        CONF_REFRESH_INTERVAL,
-        entry.data.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL),
-    )
-    # Prefer options over data (options are updated via UI after initial setup)
-    cycle_interval = entry.options.get(
-        CONF_CYCLE_INTERVAL, entry.data.get(CONF_CYCLE_INTERVAL, DEFAULT_CYCLE_INTERVAL)
-    )
+    _ = entry.data.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL)
+    cycle_interval = entry.data.get(CONF_CYCLE_INTERVAL, DEFAULT_CYCLE_INTERVAL)
 
-    # Read filter settings from config entry (data or options)
-    # Options should override data; fallback to data only if option missing
-    min_rating = entry.options.get(CONF_MIN_RATING, entry.data.get(CONF_MIN_RATING, 0))
-    include_tags_str = entry.options.get(CONF_INCLUDE_TAGS, entry.data.get(CONF_INCLUDE_TAGS, ""))
-    exclude_tags_str = entry.options.get(CONF_EXCLUDE_TAGS, entry.data.get(CONF_EXCLUDE_TAGS, ""))
+    min_rating = entry.data.get(CONF_MIN_RATING, 0)
+    include_tags_str = entry.data.get(CONF_INCLUDE_TAGS, "")
+    exclude_tags_str = entry.data.get(CONF_EXCLUDE_TAGS, "")
 
     # Parse comma-separated tags
     include_tags = [t.strip() for t in include_tags_str.split(",") if t.strip()]
@@ -150,6 +143,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
         _LOGGER,
         name=f"{DOMAIN}_{entry.entry_id}",
         update_method=async_update_data,
+        # FIXME: Doesn't the update interval need to match the cycle or the refresh interval?
         update_interval=timedelta(seconds=1),  # Check every second for cycling
     )
 

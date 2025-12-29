@@ -51,7 +51,6 @@ class SlideshowHelperConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None):
         config_entry = self._get_reconfigure_entry()
-        defaults = {**config_entry.data, **config_entry.options}
 
         if user_input is not None:
             return self.async_update_reload_and_abort(
@@ -61,5 +60,5 @@ class SlideshowHelperConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="reconfigure",
-            data_schema=self._build_schema(defaults),
+            data_schema=self._build_schema(dict(config_entry.data)),
         )
