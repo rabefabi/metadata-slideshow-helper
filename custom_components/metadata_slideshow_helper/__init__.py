@@ -1,4 +1,4 @@
-"""Slideshow Helper integration."""
+"""Metadata Slideshow Helper integration."""
 
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
     from .scanner import MediaScanner, apply_filters
 
     hass.data.setdefault(DOMAIN, {})
-    _LOGGER.info("slideshow_helper starting")
+    _LOGGER.info(f"{DOMAIN} starting")
 
     # Register HTTP view for serving images (once per domain)
     if "http_view_registered" not in hass.data[DOMAIN]:
@@ -132,7 +132,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
             # Encode path and use custom view URL
             encoded_path = relative_path.replace("/", "_SLASH_")
             # Add cache-buster so Lovelace cards refresh when cycling
-            current_url = f"/api/slideshow_helper/{entry.entry_id}/{encoded_path}?v={cycle_index}"
+            current_url = f"/api/{DOMAIN}/{entry.entry_id}/{encoded_path}?v={cycle_index}"
         else:
             current_path = None
             current_url = None

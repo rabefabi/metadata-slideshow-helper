@@ -1,4 +1,5 @@
-DOMAIN = "slideshow_helper"
+DOMAIN = "metadata_slideshow_helper"
+TITLE = "Metadata Slideshow Helper"
 CONF_MEDIA_DIR = "media_dir"
 CONF_INCLUDE_TAGS = "include_tags"
 CONF_EXCLUDE_TAGS = "exclude_tags"

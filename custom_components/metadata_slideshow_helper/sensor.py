@@ -8,7 +8,7 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpdateCoordinator
 
-from .const import DOMAIN
+from .const import DOMAIN, TITLE
 
 
 async def async_setup_entry(
@@ -35,7 +35,7 @@ class SlideshowImageCountSensor(CoordinatorEntity, SensorEntity):
         self._attr_name = "Slideshow Image Count"
         self._attr_unique_id = f"{entry_id}_image_count"
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, entry_id)}, name="Slideshow Helper"
+            identifiers={(DOMAIN, entry_id)}, name=TITLE
         )
         self._attr_icon = "mdi:image-multiple"
 
@@ -67,7 +67,7 @@ class SlideshowCurrentImageSensor(CoordinatorEntity, SensorEntity):
         self._attr_name = "Slideshow Current Image"
         self._attr_unique_id = f"{entry_id}_current_image"
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, entry_id)}, name="Slideshow Helper"
+            identifiers={(DOMAIN, entry_id)}, name=TITLE
         )
         self._attr_icon = "mdi:image"
 

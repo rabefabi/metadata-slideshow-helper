@@ -18,5 +18,5 @@ repos:
         entry: uv
         language: system
         types_or: [python]
-        args: ["run", "mypy", "custom_components/slideshow_helper"]
+        args: ["run", "mypy", "custom_components/"]
         pass_filenames: false

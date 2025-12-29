@@ -3,7 +3,7 @@
 from pathlib import Path
 
 import pytest
-from custom_components.slideshow_helper.scanner import MediaScanner
+from custom_components.metadata_slideshow_helper.scanner import MediaScanner
 
 
 def test_sample_image_by_rating_fixture(sample_image_by_rating) -> None:

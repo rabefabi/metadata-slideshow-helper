@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pytest
-from custom_components.slideshow_helper.scanner import MediaScanner, apply_filters
+from custom_components.metadata_slideshow_helper.scanner import MediaScanner, apply_filters
 
 
 @pytest.mark.asyncio

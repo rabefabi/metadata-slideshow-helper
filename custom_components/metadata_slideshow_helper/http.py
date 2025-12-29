@@ -9,14 +9,16 @@ from aiohttp import web
 from homeassistant.components.http import KEY_HASS, HomeAssistantView
 from homeassistant.core import HomeAssistant
 
+from .const import DOMAIN
+
 _LOGGER = logging.getLogger(__name__)
 
 
 class SlideshowImageView(HomeAssistantView):
     """Serve slideshow images."""
 
-    url = "/api/slideshow_helper/{entry_id}/{image_path}"
-    name = "api:slideshow_helper:image"
+    url = f"/api/{DOMAIN}/{{entry_id}}/{{image_path}}"
+    name = f"api:{DOMAIN}:image"
     requires_auth = False
 
     async def get(self, request: web.Request, entry_id: str, image_path: str) -> web.Response:
@@ -26,7 +28,7 @@ class SlideshowImageView(HomeAssistantView):
         image_path = image_path.replace("_SLASH_", "/")
 
         hass: HomeAssistant = request.app[KEY_HASS]
-        data = hass.data.get("slideshow_helper", {}).get(entry_id, {})
+        data = hass.data.get(DOMAIN, {}).get(entry_id, {})
         media_dir = data.get("config", {}).get("media_dir")
 
         _LOGGER.debug(

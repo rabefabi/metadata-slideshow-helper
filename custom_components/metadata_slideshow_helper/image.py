@@ -1,4 +1,4 @@
-"""Image platform for slideshow helper."""
+"""Image platform for Metadata Slideshow Helper."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN
+from .const import DOMAIN, TITLE
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ class SlideshowImageEntity(CoordinatorEntity, ImageEntity):
         self._media_dir = media_dir
         self._attr_unique_id = f"{entry_id}_slideshow_image"
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, entry_id)}, name="Slideshow Helper"
+            identifiers={(DOMAIN, entry_id)}, name=TITLE
         )
         # ImageEntity expects access_tokens as a deque for state attributes
         self.access_tokens: deque[str] = deque()
@@ -77,7 +77,7 @@ class SlideshowImageEntity(CoordinatorEntity, ImageEntity):
 
         This bypasses the Home Assistant image_proxy to avoid token issues,
         leveraging the custom HTTP view. Frontend will fetch the image from
-        `/api/slideshow_helper/...` which does not require authentication.
+        `/api/{DOMAIN}/...` which does not require authentication.
         """
         data = self.coordinator.data or {}
         return data.get("current_url")

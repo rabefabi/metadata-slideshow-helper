@@ -15,6 +15,7 @@ from .const import (
     DEFAULT_CYCLE_INTERVAL,
     DEFAULT_REFRESH_INTERVAL,
     DOMAIN,
+    TITLE,
 )
 
 
@@ -25,7 +26,7 @@ class SlideshowHelperConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
         if user_input is not None:
             return self.async_create_entry(
-                title=user_input.get(CONF_NAME, "Slideshow Helper"), data=user_input
+                title=user_input.get(CONF_NAME, TITLE), data=user_input
             )
 
         data_schema = vol.Schema(

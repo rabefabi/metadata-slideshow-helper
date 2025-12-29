@@ -1,6 +1,6 @@
 # Technical Architecture
 
-- Custom integration `slideshow_helper`; platforms: sensor (current image/count) and image entity.
+- Custom integration `metadata_slideshow_helper`; platforms: sensor (current image/count) and image entity.
 - Coordinator pattern: `DataUpdateCoordinator` cycles images on a timer; state includes `current_path`, `current_url`, `cycle_index`, `images`.
 - Media scanning: `MediaScanner` walks configured directory, reads metadata (EXIF/ratings), filters by rating/tags.
 - Config flow: options for media_dir, min_rating, include_tags, exclude_tags, cycle_interval, refresh_interval.
