@@ -4,6 +4,7 @@ import contextlib
 import logging
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
 import exifread
 import piexif
@@ -11,6 +12,8 @@ from PIL import Image
 
 # Suppress exifread warnings for unrecognized formats
 logging.getLogger("exifread").setLevel(logging.ERROR)
+
+_LOGGER = logging.getLogger(__name__)
 
 SUPPORTED_EXT = {".jpg", ".jpeg", ".png"}
 
@@ -29,28 +32,25 @@ class MediaScanner:
 
     def scan(self) -> list[ImageMeta]:
         results: list[ImageMeta] = []
-        if not os.path.isdir(self.root):
-            # TODO: Log warning
+        root_path = Path(self.root)
+        if not root_path.is_dir():
+            _LOGGER.warning("Media root not found or not a directory: %s", self.root)
             return results
 
-        # TODO: Check if pathlib glob
-        for dirpath, _, filenames in os.walk(self.root):
-            for fn in filenames:
-                ext = os.path.splitext(fn)[1].lower()
-                if ext not in SUPPORTED_EXT:
-                    continue
-                full = os.path.join(dirpath, fn)
+        for p in root_path.rglob("*"):
+            if p.suffix.lower() not in SUPPORTED_EXT:
+                continue
+            # Skip unreadable files (broken symlinks, permission issues)
+            if not p.is_file() or not os.access(p, os.R_OK):
+                continue
 
-                # Skip unreadable files (broken symlinks, permission issues)
-                if not os.path.isfile(full) or not os.access(full, os.R_OK):
-                    continue
-
-                try:
-                    meta = self._read_metadata(full)
-                    results.append(meta)
-                except Exception:
-                    # Skip files that can't be read at all
-                    results.append(ImageMeta(path=full, tags=[], rating=0, date=None))
+            full = str(p)
+            try:
+                meta = self._read_metadata(full)
+                results.append(meta)
+            except Exception:
+                # Skip files that can't be read at all
+                results.append(ImageMeta(path=full, tags=[], rating=0, date=None))
         return results
 
     def _read_metadata(self, path: str) -> ImageMeta:

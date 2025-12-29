@@ -46,7 +46,6 @@ def test_images(test_images_dir: Path) -> Generator[list[Path]]:
     # Images are intentionally not cleaned up to persist across test runs
 
 
-# TODO: This fixture probably should return spec.rating >= rating, instead of ==
 @pytest.fixture
 def sample_image_by_rating(test_images_dir: Path, test_images: list[Path]):
     """Provide a helper to get test images filtered by rating.
