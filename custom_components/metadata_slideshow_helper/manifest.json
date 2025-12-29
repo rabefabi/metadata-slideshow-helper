@@ -2,6 +2,7 @@
   "domain": "metadata_slideshow_helper",
   "name": "Metadata Slideshow Helper",
   "version": "0.1.6",
+  "integration_type": "service",
   "documentation": "https://github.com/rabefabi/metadata-slideshow-helper",
   "issue_tracker": "https://github.com/rabefabi/metadata-slideshow-helper/issues",
   "requirements": [
@@ -12,5 +13,6 @@
   ],
   "codeowners": ["@rabefabi"],
   "iot_class": "local_polling",
-  "config_flow": true
+  "config_flow": true,
+  "quality_scale": "custom"
 }
