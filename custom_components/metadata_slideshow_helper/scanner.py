@@ -37,20 +37,19 @@ class MediaScanner:
             _LOGGER.warning("Media root not found or not a directory: %s", self.root)
             return results
 
-        for p in root_path.rglob("*"):
-            if p.suffix.lower() not in SUPPORTED_EXT:
-                continue
-            # Skip unreadable files (broken symlinks, permission issues)
-            if not p.is_file() or not os.access(p, os.R_OK):
-                continue
+        for ext in SUPPORTED_EXT:
+            for p in root_path.rglob(f"*{ext}"):
+                # Skip unreadable files (broken symlinks, permission issues)
+                if not p.is_file() or not os.access(p, os.R_OK):
+                    continue
 
-            full = str(p)
-            try:
-                meta = self._read_metadata(full)
-                results.append(meta)
-            except Exception:
-                # Skip files that can't be read at all
-                results.append(ImageMeta(path=full, tags=[], rating=0, date=None))
+                full = str(p)
+                try:
+                    meta = self._read_metadata(full)
+                    results.append(meta)
+                except Exception:
+                    # On any error, still include the file with empty metadata
+                    results.append(ImageMeta(path=full, tags=[], rating=0, date=None))
         return results
 
     def _read_metadata(self, path: str) -> ImageMeta:
