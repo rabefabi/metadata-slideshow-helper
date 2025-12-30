@@ -28,6 +28,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
         CONF_MEDIA_DIR,
         CONF_MIN_RATING,
         CONF_REFRESH_INTERVAL,
+        DATA_CONFIG,
+        DATA_COORDINATOR,
         DEFAULT_CYCLE_INTERVAL,
         DEFAULT_REFRESH_INTERVAL,
         DOMAIN,
@@ -138,8 +140,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
     await coordinator.async_config_entry_first_refresh()
 
     hass.data[DOMAIN][entry.entry_id] = {
-        "config": entry.data,
-        "coordinator": coordinator,
+        DATA_CONFIG: entry.data,
+        DATA_COORDINATOR: coordinator,
     }
 
     # Listen for options updates and force rescan

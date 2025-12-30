@@ -16,7 +16,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN, TITLE
+from .const import CONF_MEDIA_DIR, DATA_CONFIG, DATA_COORDINATOR, DOMAIN, TITLE
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -27,8 +27,8 @@ async def async_setup_entry(
     """Set up the image entity."""
 
     data = hass.data.get(DOMAIN, {}).get(entry.entry_id, {})
-    coordinator = data.get("coordinator")
-    media_dir = data.get("config", {}).get("media_dir")
+    coordinator = data.get(DATA_COORDINATOR)
+    media_dir = data.get(DATA_CONFIG, {}).get(CONF_MEDIA_DIR)
 
     if coordinator and media_dir:
         async_add_entities([SlideshowImageEntity(coordinator, entry.entry_id, media_dir)])

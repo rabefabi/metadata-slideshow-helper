@@ -7,7 +7,7 @@ from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpdateCoordinator
 
-from .const import DOMAIN, TITLE
+from .const import DATA_COORDINATOR, DOMAIN, TITLE
 
 
 async def async_setup_entry(
@@ -15,7 +15,7 @@ async def async_setup_entry(
 ) -> None:
     # If a coordinator is present in hass.data, use it to create sensors.
     data = hass.data.get(DOMAIN, {}).get(entry.entry_id, {})
-    coordinator: DataUpdateCoordinator | None = data.get("coordinator")
+    coordinator: DataUpdateCoordinator | None = data.get(DATA_COORDINATOR)
     if coordinator:
         async_add_entities(
             [
