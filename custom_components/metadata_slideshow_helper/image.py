@@ -47,7 +47,8 @@ class SlideshowImageEntity(CoordinatorEntity, ImageEntity):  # type: ignore[misc
     _attr_should_poll = False
 
     def __init__(self, coordinator, entry_id: str, media_dir: str) -> None:
-        super().__init__(coordinator)
+        CoordinatorEntity.__init__(self, coordinator)
+        ImageEntity.__init__(self, coordinator.hass)
         self._entry_id = entry_id
         self._media_dir = media_dir
         self._attr_unique_id = f"{entry_id}_slideshow_image"
