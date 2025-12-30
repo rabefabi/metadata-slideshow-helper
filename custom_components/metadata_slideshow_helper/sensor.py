@@ -20,7 +20,6 @@ async def async_setup_entry(
         async_add_entities(
             [
                 SlideshowImageCountSensor(coordinator, entry.entry_id),
-                SlideshowInfoSensor(coordinator, entry.entry_id),
             ],
             True,
         )
@@ -45,40 +44,6 @@ class SlideshowImageCountSensor(CoordinatorEntity, SensorEntity):
     def extra_state_attributes(self):
         data = self.coordinator.data or {}
         return {
-            "filtered_image_count": data.get("count", 0),
-            "total_image_count": data.get("total_count", 0),
-        }
-
-    @property
-    def should_poll(self) -> bool:
-        return False
-
-    @property
-    def available(self) -> bool:
-        return self.coordinator.last_update_success
-
-
-class SlideshowInfoSensor(CoordinatorEntity, SensorEntity):
-    def __init__(self, coordinator: DataUpdateCoordinator, entry_id: str):
-        super().__init__(coordinator)
-        self._attr_name = "Slideshow Status"
-        self._attr_unique_id = f"{entry_id}_slideshow_info"
-        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry_id)}, name=TITLE)
-        self._attr_icon = "mdi:information-outline"
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
-
-    @property
-    def native_value(self):
-        data = self.coordinator.data or {}
-        # Simple status: "active" when any images available, else "empty"
-        return "active" if (data.get("count", 0) or 0) > 0 else "empty"
-
-    @property
-    def extra_state_attributes(self):
-        data = self.coordinator.data or {}
-        return {
-            "current_path": data.get("current_path"),
-            "cycle_index": data.get("cycle_index"),
             "filtered_image_count": data.get("count", 0),
             "total_image_count": data.get("total_count", 0),
         }
