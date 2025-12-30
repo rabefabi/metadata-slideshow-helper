@@ -20,3 +20,10 @@ repos:
         types_or: [python]
         args: ["run", "mypy", "custom_components/"]
         pass_filenames: false
+      - id: pytest
+        name: pytest
+        entry: uv
+        language: system
+        types_or: [python]
+        args: ["run", "pytest"]
+        pass_filenames: false
