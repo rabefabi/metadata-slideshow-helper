@@ -12,7 +12,7 @@
 - Filesystem rescan uses `refresh_interval`; scanning is skipped between rescans to reduce I/O.
 - Validation: `refresh_interval` must be greater than `cycle_interval`. The refresh interval acts as a lower bound: effective rescan happens no sooner than the next cycle due.
 - Filesystem rescan uses `refresh_interval`; scanning is skipped between rescans to reduce I/O.
-- Image entity seeds `access_tokens` and keeps `_attr_should_poll = False`; bytes are read via executor to avoid blocking the event loop.
+- Image entity keeps `_attr_should_poll = False`; bytes are read via executor to avoid blocking the event loop.
 
 ### Recent Fix: Frontend Refresh
 

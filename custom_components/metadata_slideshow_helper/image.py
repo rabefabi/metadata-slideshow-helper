@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import logging
 import os
-import secrets
-from collections import deque
 from typing import cast
 
 from homeassistant.components.image import ImageEntity
@@ -34,8 +32,14 @@ async def async_setup_entry(
         async_add_entities([SlideshowImageEntity(coordinator, entry.entry_id, media_dir)])
 
 
-class SlideshowImageEntity(CoordinatorEntity, ImageEntity):
-    """Image entity exposing the current slideshow image."""
+class SlideshowImageEntity(CoordinatorEntity, ImageEntity):  # type: ignore[misc]
+    """Image entity exposing the current slideshow image.
+
+    Note: Type checker reports incompatible definitions for available, state, and entity_picture
+    between CoordinatorEntity and ImageEntity base classes. This is a false positive—the MRO
+    resolves correctly at runtime, with CoordinatorEntity's cached_property available() taking
+    precedence over Entity's property, and ImageEntity's implementations working as expected.
+    """
 
     _attr_has_entity_name = True
     _attr_name = None
@@ -48,16 +52,7 @@ class SlideshowImageEntity(CoordinatorEntity, ImageEntity):
         self._media_dir = media_dir
         self._attr_unique_id = f"{entry_id}_slideshow_image"
         self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry_id)}, name=TITLE)
-        # ImageEntity expects access_tokens as a deque for state attributes
-        self.access_tokens: deque[str] = deque()
-        self._ensure_token()
         self._last_path: str | None = None
-
-    def _ensure_token(self) -> None:
-        """Ensure at least one access token exists."""
-
-        if not self.access_tokens:
-            self.access_tokens.append(secrets.token_hex(8))
 
     async def async_image(self) -> bytes | None:
         """Return bytes of current image for the API."""

@@ -108,9 +108,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
         if items and time_since_cycle >= cycle_interval:
             cycle_index = (cycle_index + 1) % len(items)
             last_cycle = current_time
-            _LOGGER.info(
-                f"Cycling to image {cycle_index + 1}/{len(items)}: {items[cycle_index].path}"
-            )
 
         # Ensure index is valid
         if items:
