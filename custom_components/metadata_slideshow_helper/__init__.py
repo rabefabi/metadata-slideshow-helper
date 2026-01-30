@@ -62,7 +62,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
     last_advance: float = time.time()
     cached_matching_items: list = []
     last_rescan: float = 0.0
-    last_discovered_count: int
+    last_discovered_count: int = 0
     # Track if we've already warned about no images to avoid log spam
     no_images_warned: bool = False
 
