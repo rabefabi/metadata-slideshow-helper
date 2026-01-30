@@ -1,0 +1,8 @@
+{
+  "title": "Metadata Slideshow Helper",
+  "config": {
+    "error": {
+      "invalid_interval": "Rescan interval must be greater than advance interval (advance: {advance}s, rescan: {refresh}s). The coordinator updates entities every advance interval, but rescans the filesystem only every rescan interval."
+    }
+  }
+}

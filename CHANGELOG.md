@@ -1,5 +1,38 @@
 # Changelog
 
+## Unreleased
+
+## 0.2.0 - 2026-01-30
+
+### Breaking Changes
+- **Renamed domain**: `slideshow_helper` → `metadata_slideshow_helper` (requires reconfiguration)
+- **Config schema version bump**: v1 → v2 (configuration entries need migration)
+- **Configuration keys renamed**:
+  - `cycle_interval` → `advance_interval` (time between advancing to next image)
+
+### Features
+- Config validation: `refresh_interval` must be > `advance_interval` with clear error messaging
+- Reconfigure support: Update integration settings without removing/re-adding
+- Improved terminology: Consistent use of "discovered images" (all scanned) vs "matching images" (after filters)
+- Better logging: Clear distinction between rescanning filesystem and advancing images
+
+### Improvements
+- Sensor attributes: Renamed to `matching_image_count` and `discovered_image_count` for clarity
+- Image Count sensor: Marked as Diagnostic category
+- Scanner: Switched to `pathlib` for filesystem operations; improved error handling
+- Constants: Eliminated magic strings by using explicit `DATA_*` constants throughout
+- Documentation: Added terminology table to README defining key concepts
+
+### Removals
+- Removed unused entities: `SlideshowCurrentImageSensor`, `SlideshowInfoSensor`
+- Removed deprecated services: `get_image_urls` and custom HTTP views
+- Removed unused runtime dependency: `exif` package
+- Removed options flow (use reconfigure instead)
+
+### Fixes
+- Fixed uninitialized `last_discovered_count` variable
+- CI: Added test dependencies to pre-commit workflow
+
 ## 0.1.6 - 2025-12-28
 
 - Feat: Add XMP tag filtering support with comprehensive metadata handling

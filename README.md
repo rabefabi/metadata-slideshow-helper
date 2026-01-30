@@ -1,3 +1,28 @@
-# Slideshow Helper
+# Metadata Slideshow Helper
 
-WIP Vibe Coding Project - I wouldn't trust this yet.
+> [!WARNING]
+> WIP Vibe Coding Project and my first Home Assistant Integration - I wouldn't trust this yet.
+
+## Configuration Notes
+
+- `media_dir`: Directory to scan for images.
+- `min_rating`: Minimum XMP/EXIF rating to include (0–5 scale).
+- `include_tags` / `exclude_tags`: Tag filters applied to image metadata (case-insensitive).
+- `advance_interval` (seconds): Time between advancing to the next matching image.
+- `refresh_interval` (seconds): Time between rescanning the media directory for new/changed files.
+  - Must be greater than `advance_interval`.
+  - The coordinator updates entities every `advance_interval`, but only rescans the filesystem every `refresh_interval` to reduce I/O.
+
+## Entities
+
+- Slideshow Image (image): Shows current image; updates when advancing to the next match
+- Slideshow Image Count (sensor, Diagnostic): State is matching image count; attributes include `matching_image_count` and `discovered_image_count`
+
+## Terminology
+
+| Term | Definition |
+|------|-----------|
+| **Discovered images** | All image files found in the media directory during a rescan. |
+| **Matching images** | Images from the discovered set that pass all configured filters (min_rating, include_tags, exclude_tags). |
+| **Rescan** | Walking the media directory and reading image metadata; controlled by `refresh_interval`. |
+| **Advance** | Automatically moving to the next matching image; happens every `advance_interval` seconds. |
