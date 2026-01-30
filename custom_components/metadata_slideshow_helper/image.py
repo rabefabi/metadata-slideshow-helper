@@ -14,7 +14,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_MEDIA_DIR, DATA_CONFIG, DATA_COORDINATOR, DOMAIN, TITLE
+from .const import CONF_MEDIA_DIR, DATA_CONFIG, DATA_COORDINATOR, DATA_CURRENT_PATH, DOMAIN, TITLE
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ class SlideshowImageEntity(CoordinatorEntity, ImageEntity):  # type: ignore[misc
         """Return bytes of current image for the API."""
 
         coordinator_data = self.coordinator.data or {}
-        current_path = coordinator_data.get("current_path")
+        current_path = coordinator_data.get(DATA_CURRENT_PATH)
         if not current_path:
             _LOGGER.warning(
                 "async_image called with no current_path; coordinator data keys=%s",
@@ -111,7 +111,7 @@ class SlideshowImageEntity(CoordinatorEntity, ImageEntity):  # type: ignore[misc
         """Return mime type guessed from extension."""
 
         data = self.coordinator.data or {}
-        current_path = data.get("current_path")
+        current_path = data.get(DATA_CURRENT_PATH)
         ext = os.path.splitext(current_path or "")[1].lower()
         return "image/jpeg" if ext in [".jpg", ".jpeg"] else "image/png"
 
@@ -119,7 +119,7 @@ class SlideshowImageEntity(CoordinatorEntity, ImageEntity):  # type: ignore[misc
         await super().async_added_to_hass()
         # Initialize last path and timestamp to force initial fetch
         data = self.coordinator.data or {}
-        self._last_path = data.get("current_path")
+        self._last_path = data.get(DATA_CURRENT_PATH)
         # Set initial timestamp so frontend fetches image bytes
         self._attr_image_last_updated = dt_util.utcnow()
         self.async_write_ha_state()
@@ -127,7 +127,7 @@ class SlideshowImageEntity(CoordinatorEntity, ImageEntity):  # type: ignore[misc
     def _handle_coordinator_update(self) -> None:
         # Bump image_last_updated when the current_path changes
         coordinator_data = self.coordinator.data or {}
-        current_path = coordinator_data.get("current_path")
+        current_path = coordinator_data.get(DATA_CURRENT_PATH)
         if current_path != self._last_path:
             self._attr_image_last_updated = dt_util.utcnow()
             self._last_path = current_path

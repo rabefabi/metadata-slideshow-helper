@@ -30,6 +30,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
         CONF_REFRESH_INTERVAL,
         DATA_CONFIG,
         DATA_COORDINATOR,
+        DATA_CURRENT_PATH,
         DEFAULT_CYCLE_INTERVAL,
         DEFAULT_REFRESH_INTERVAL,
         DOMAIN,
@@ -62,7 +63,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
     no_images_warned: bool = False
 
     async def async_update_data():
-        """Fetch data from media scanner and handle cycling."""
+        """Fetch data from media scanner and handle image cycling."""
+
+        # TODO: Refactor to avoid use of nonlocal, use dedicated class to hold state instead
+        # https://github.com/rabefabi/metadata-slideshow-helper/issues/9
         nonlocal \
             last_cycle, \
             cycle_index, \
@@ -87,7 +91,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
             last_total_count = len(all_items)
             if items:
                 _LOGGER.info(
-                    f"Found {len(items)} images (filtered from {len(all_items)} total, "
+                    f"Found {len(items)} images (filtered from {len(all_items)} images total, "
                     f"min_rating={min_rating}, include_tags={include_tags}, exclude_tags={exclude_tags})"
                 )
                 no_images_warned = False  # Reset warning flag when images are found
@@ -95,7 +99,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
                 # Only log warning once when no images are found
                 _LOGGER.warning(
                     f"No images found in {media_dir} after filtering "
-                    f"(scanned {len(all_items)}, min_rating={min_rating}, "
+                    f"(scanned {len(all_items)} images total, min_rating={min_rating}, "
                     f"include_tags={include_tags}, exclude_tags={exclude_tags})"
                 )
                 no_images_warned = True
@@ -106,6 +110,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
         time_since_cycle = current_time - last_cycle
 
         if items and time_since_cycle >= cycle_interval:
+            # TODO: Consider a "smart random" mode, which does a pre-configured amount of images in a row, and then jumps to a random image
+            # https://github.com/rabefabi/metadata-slideshow-helper/issues/10
             cycle_index = (cycle_index + 1) % len(items)
             last_cycle = current_time
 
@@ -116,11 +122,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
         else:
             current_path = None
 
+        # TODO: Consider adding dataclass for return type
+        # https://github.com/rabefabi/metadata-slideshow-helper/issues/9
         return {
             "images": items,
             "count": len(items),
             "total_count": last_total_count,
-            "current_path": current_path,
+            DATA_CURRENT_PATH: current_path,
             "cycle_index": cycle_index,
         }
 
