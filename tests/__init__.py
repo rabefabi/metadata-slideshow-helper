@@ -1,1 +1,1 @@
-"""Test suite for slideshow_helper."""
+"""Test suite for metadata_slideshow_helper."""

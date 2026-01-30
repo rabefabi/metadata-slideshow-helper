@@ -11,12 +11,12 @@
   ```bash
   uv venv .venv --python 3.13
   uv sync --extra dev
-  uv run ruff check && uv run mypy custom_components/slideshow_helper
+  uv run ruff check && uv run mypy custom_components/metadata_slideshow_helper
   docker compose up -d && docker compose logs -f homeassistant
   ```
 
 ## Home Assistant development runtime
 
 - Use the provided `docker-compose.yml`. It launches a home assistant deployment with the integration already installed, and the `sample_media` already mounted
-- Manually create a test user and test home configuration, and add the `slideshow_helper` integration to the default dashboard,
+- Manually create a test user and test home configuration, and add the `metadata_slideshow_helper` integration to the default dashboard,
  so that the coding agent can access it via e.g. the playwright MCP server.
