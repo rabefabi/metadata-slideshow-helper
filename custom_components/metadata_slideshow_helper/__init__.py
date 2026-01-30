@@ -45,7 +45,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
     _LOGGER.info(f"{DOMAIN} starting")
 
     # Create coordinator that scans media directory
-    media_dir = entry.data.get(CONF_MEDIA_DIR, "")
+    media_dir_str = entry.data.get(CONF_MEDIA_DIR, "")
     refresh_interval = entry.data.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL)
     advance_interval = entry.data.get(CONF_ADVANCE_INTERVAL, DEFAULT_ADVANCE_INTERVAL)
 
@@ -53,7 +53,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
     include_tags_str = entry.data.get(CONF_INCLUDE_TAGS, "")
     exclude_tags_str = entry.data.get(CONF_EXCLUDE_TAGS, "")
 
-    # Parse comma-separated tags
+    # Parse comma-separated directories and tags
+    media_dirs = [d.strip() for d in media_dir_str.split(",") if d.strip()]
     include_tags = [t.strip() for t in include_tags_str.split(",") if t.strip()]
     exclude_tags = [t.strip() for t in exclude_tags_str.split(",") if t.strip()]
 
@@ -82,11 +83,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
         current_time = time.time()
 
         # Only rescan filesystem periodically, not every coordinator update
-        if not media_dir:
+        if not media_dirs:
             matching_items = []
         elif not cached_matching_items or (current_time - last_rescan) >= float(refresh_interval):
-            _LOGGER.info(f"Rescanning media_dir: {media_dir}")
-            scanner = MediaScanner(media_dir)
+            _LOGGER.info(f"Rescanning media_dirs: {media_dirs}")
+            scanner = MediaScanner(media_dirs)
             discovered_items = await hass.async_add_executor_job(scanner.scan)
             # Apply filters based on configuration
             matching_items = apply_filters(discovered_items, include_tags, exclude_tags, min_rating)
@@ -102,7 +103,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
             elif not no_images_warned:
                 # Only log warning once when no images match the filters
                 _LOGGER.warning(
-                    f"No images matched filters in {media_dir} "
+                    f"No images matched filters in {media_dirs} "
                     f"(discovered {len(discovered_items)} images, min_rating={min_rating}, "
                     f"include_tags={include_tags}, exclude_tags={exclude_tags})"
                 )

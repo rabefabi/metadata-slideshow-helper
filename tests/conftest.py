@@ -5,7 +5,11 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from .image_generator import SAMPLE_MEDIA_DIR, TEST_IMAGE_SPECS, generate_test_images
+from .image_generator import (
+    SAMPLE_MEDIA_DIR,
+    TEST_IMAGE_SPECS,
+    generate_test_images_across_dirs,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -24,30 +28,29 @@ def test_images_dir() -> Path:
 
 
 @pytest.fixture(scope="session")
-def test_images(test_images_dir: Path) -> Generator[list[Path]]:
-    """Generate test images with various metadata configurations.
+def test_images_multidir(test_images_dir: Path) -> Generator[tuple[list[Path], list[Path]]]:
+    """Generate test images split across multiple subdirectories.
 
-    This fixture creates a comprehensive set of test images once per test session
-    and ensures they're available for all tests. The images persist across test
-    runs in a non-git-tracked directory.
+    This fixture creates images in separate directories within SAMPLE_MEDIA_DIR
+    to test multi-directory scanning functionality. The images are distributed
+    evenly across directories.
 
     Yields:
-        List of paths to generated test images
-
-    Example:
-        def test_scanner(test_images):
-            scanner = MediaScanner(str(test_images[0].parent))
-            results = scanner.scan()
-            assert len(results) == len(test_images)
+        Tuple of (list of all image paths, list of directory paths)
     """
-
-    created_paths = generate_test_images(test_images_dir)
-    yield created_paths
+    # Create subdirectories within the main test images directory
+    multi_dir_parent = test_images_dir / "by_year"
+    created_paths, dir_paths = generate_test_images_across_dirs(
+        multi_dir_parent, num_dirs=2, specs=TEST_IMAGE_SPECS
+    )
+    yield created_paths, dir_paths
     # Images are intentionally not cleaned up to persist across test runs
 
 
 @pytest.fixture
-def sample_image_by_rating(test_images_dir: Path, test_images: list[Path]):
+def sample_image_by_rating(
+    test_images_dir: Path, test_images_multidir: tuple[list[Path], list[Path]]
+):
     """Provide a helper to get test images filtered by rating.
 
     Args:
@@ -72,7 +75,7 @@ def sample_image_by_rating(test_images_dir: Path, test_images: list[Path]):
 
 
 @pytest.fixture
-def sample_image_by_tag(test_images_dir: Path, test_images: list[Path]):
+def sample_image_by_tag(test_images_dir: Path, test_images_multidir: tuple[list[Path], list[Path]]):
     """Provide a helper to get test images filtered by tag.
 
     Args:
