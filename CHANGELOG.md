@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.2.2 - 2026-01-30
+
+### Features
+- **Smart random advancement mode**: Choose between `sequential` (default) or `smart_random` advancement modes
+  - `smart_random_sequence_length`: Configure how many images to advance sequentially before jumping to random position (default 3)
+
 ## 0.2.1 - 2026-01-30
 
 ### Improvements
