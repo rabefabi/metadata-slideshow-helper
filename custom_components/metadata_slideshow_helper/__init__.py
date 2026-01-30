@@ -4,6 +4,7 @@ from __future__ import annotations
 
 # ruff: noqa: PLC0415 (import-outside-toplevel) - avoid heavy imports on package import
 import logging
+import random
 import time
 from datetime import timedelta
 from typing import TYPE_CHECKING
@@ -23,11 +24,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
 
     from .const import (
         CONF_ADVANCE_INTERVAL,
+        CONF_ADVANCE_MODE,
         CONF_EXCLUDE_TAGS,
         CONF_INCLUDE_TAGS,
         CONF_MEDIA_DIR,
         CONF_MIN_RATING,
         CONF_REFRESH_INTERVAL,
+        CONF_SMART_RANDOM_SEQUENCE_LENGTH,
         DATA_ADVANCE_INDEX,
         DATA_CONFIG,
         DATA_COORDINATOR,
@@ -36,8 +39,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
         DATA_MATCHING_IMAGE_COUNT,
         DATA_MATCHING_IMAGES,
         DEFAULT_ADVANCE_INTERVAL,
+        DEFAULT_ADVANCE_MODE,
         DEFAULT_REFRESH_INTERVAL,
+        DEFAULT_SMART_RANDOM_SEQUENCE_LENGTH,
         DOMAIN,
+        AdvanceMode,
     )
     from .scanner import MediaScanner, apply_filters
 
@@ -48,6 +54,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
     media_dir_str = entry.data.get(CONF_MEDIA_DIR, "")
     refresh_interval = entry.data.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL)
     advance_interval = entry.data.get(CONF_ADVANCE_INTERVAL, DEFAULT_ADVANCE_INTERVAL)
+    advance_mode = AdvanceMode(entry.data.get(CONF_ADVANCE_MODE, DEFAULT_ADVANCE_MODE.value))
+
+    smart_random_sequence_length = entry.data.get(
+        CONF_SMART_RANDOM_SEQUENCE_LENGTH, DEFAULT_SMART_RANDOM_SEQUENCE_LENGTH
+    )
 
     min_rating = entry.data.get(CONF_MIN_RATING, 0)
     include_tags_str = entry.data.get(CONF_INCLUDE_TAGS, "")
@@ -66,8 +77,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
     last_discovered_count: int = 0
     # Track if we've already warned about no images to avoid log spam
     no_images_warned: bool = False
+    # For smart random mode: track the sequence counter
+    smart_random_counter: int = 0
 
-    async def async_update_data():
+    async def async_update_data():  # noqa: PLR0912 (too many branches) - see issue #9
         """Fetch data from media scanner and handle image cycling."""
 
         # TODO: Refactor to avoid use of nonlocal, use dedicated class to hold state instead
@@ -78,7 +91,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
             cached_matching_items, \
             last_rescan, \
             last_discovered_count, \
-            no_images_warned
+            no_images_warned, \
+            smart_random_counter
 
         current_time = time.time()
 
@@ -115,9 +129,30 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
         time_since_advance = current_time - last_advance
 
         if matching_items and time_since_advance >= advance_interval:
-            # TODO: Consider a "smart random" mode, which does a pre-configured amount of images in a row, and then jumps to a random image
-            # https://github.com/rabefabi/metadata-slideshow-helper/issues/10
-            advance_index = (advance_index + 1) % len(matching_items)
+            if advance_mode == AdvanceMode.SMART_RANDOM:
+                # In smart random mode, advance sequentially through
+                # smart_random_sequence_length images, then jump to a new random position
+                smart_random_counter += 1
+                if smart_random_counter >= smart_random_sequence_length:
+                    # Jump to a new random image
+                    advance_index = random.randint(0, len(matching_items) - 1)
+                    smart_random_counter = 0
+                    _LOGGER.debug(
+                        f"Smart random: jumped to image index {advance_index}, "
+                        f"will advance sequentially for {smart_random_sequence_length} images"
+                    )
+                else:
+                    # Continue sequentially within the current sequence
+                    advance_index = (advance_index + 1) % len(matching_items)
+            elif advance_mode == AdvanceMode.SEQUENTIAL:
+                # Sequential mode: always advance to next image
+                advance_index = (advance_index + 1) % len(matching_items)
+            else:
+                msg = (
+                    f"Unknown advance_mode: {advance_mode}. Expected "
+                    f"'{AdvanceMode.SEQUENTIAL.value}' or '{AdvanceMode.SMART_RANDOM.value}'."
+                )
+                raise ValueError(msg)
             last_advance = current_time
 
         # Ensure index is valid

@@ -1,3 +1,17 @@
+"""Constants for Metadata Slideshow Helper integration."""
+
+from __future__ import annotations
+
+from enum import Enum
+
+
+class AdvanceMode(str, Enum):
+    """Enum for image advancement modes."""
+
+    SEQUENTIAL = "sequential"
+    SMART_RANDOM = "smart_random"
+
+
 DOMAIN = "metadata_slideshow_helper"
 TITLE = "Metadata Slideshow Helper"
 CONF_MEDIA_DIR = "media_dir"
@@ -6,6 +20,8 @@ CONF_EXCLUDE_TAGS = "exclude_tags"
 CONF_MIN_RATING = "min_rating"
 CONF_REFRESH_INTERVAL = "refresh_interval"
 CONF_ADVANCE_INTERVAL = "advance_interval"
+CONF_ADVANCE_MODE = "advance_mode"
+CONF_SMART_RANDOM_SEQUENCE_LENGTH = "smart_random_sequence_length"
 DATA_CONFIG = "config"
 DATA_COORDINATOR = "coordinator"
 DATA_CURRENT_PATH = "current_path"
@@ -16,3 +32,5 @@ DATA_ADVANCE_INDEX = "advance_index"
 DEFAULT_REFRESH_INTERVAL = 3600
 DEFAULT_MIN_RATING = 0
 DEFAULT_ADVANCE_INTERVAL = 60
+DEFAULT_ADVANCE_MODE = AdvanceMode.SEQUENTIAL
+DEFAULT_SMART_RANDOM_SEQUENCE_LENGTH = 3

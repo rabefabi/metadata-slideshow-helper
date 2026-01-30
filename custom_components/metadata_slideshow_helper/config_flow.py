@@ -8,21 +8,26 @@ from homeassistant.const import CONF_NAME
 
 from .const import (
     CONF_ADVANCE_INTERVAL,
+    CONF_ADVANCE_MODE,
     CONF_EXCLUDE_TAGS,
     CONF_INCLUDE_TAGS,
     CONF_MEDIA_DIR,
     CONF_MIN_RATING,
     CONF_REFRESH_INTERVAL,
+    CONF_SMART_RANDOM_SEQUENCE_LENGTH,
     DEFAULT_ADVANCE_INTERVAL,
+    DEFAULT_ADVANCE_MODE,
     DEFAULT_REFRESH_INTERVAL,
+    DEFAULT_SMART_RANDOM_SEQUENCE_LENGTH,
     DOMAIN,
     TITLE,
+    AdvanceMode,
 )
 
 
 class SlideshowHelperConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 2
-    MINOR_VERSION = 1
+    MINOR_VERSION = 2
 
     def _build_schema(self, defaults: dict[str, Any] | None = None) -> vol.Schema:
         values = defaults or {}
@@ -39,6 +44,16 @@ class SlideshowHelperConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Optional(
                     CONF_REFRESH_INTERVAL,
                     default=values.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL),
+                ): int,
+                vol.Optional(
+                    CONF_ADVANCE_MODE,
+                    default=values.get(CONF_ADVANCE_MODE, DEFAULT_ADVANCE_MODE.value),
+                ): vol.In([mode.value for mode in AdvanceMode]),
+                vol.Optional(
+                    CONF_SMART_RANDOM_SEQUENCE_LENGTH,
+                    default=values.get(
+                        CONF_SMART_RANDOM_SEQUENCE_LENGTH, DEFAULT_SMART_RANDOM_SEQUENCE_LENGTH
+                    ),
                 ): int,
             }
         )

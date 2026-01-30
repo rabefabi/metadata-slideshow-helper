@@ -12,6 +12,10 @@
 - `refresh_interval` (seconds): Time between rescanning the media directory for new/changed files.
   - Must be greater than `advance_interval`.
   - The coordinator updates entities every `advance_interval`, but only rescans the filesystem every `refresh_interval` to reduce I/O.
+- `advance_mode`: Image advancement mode (`sequential` or `smart_random`).
+  - `sequential`: Always advance to the next image in order (default).
+  - `smart_random`: Advance sequentially for N images, then jump to a random position.
+    - `smart_random_sequence_length`: For smart random mode, number of images to advance sequentially before jumping (default 3). Only used when `advance_mode` is `smart_random`.
 
 ## Entities
 
