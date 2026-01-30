@@ -7,7 +7,13 @@ from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpdateCoordinator
 
-from .const import DATA_COORDINATOR, DOMAIN, TITLE
+from .const import (
+    DATA_COORDINATOR,
+    DATA_DISCOVERED_IMAGE_COUNT,
+    DATA_MATCHING_IMAGE_COUNT,
+    DOMAIN,
+    TITLE,
+)
 
 
 async def async_setup_entry(
@@ -38,14 +44,14 @@ class SlideshowImageCountSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def native_value(self):
-        return (self.coordinator.data or {}).get("count", 0)
+        return (self.coordinator.data or {}).get(DATA_MATCHING_IMAGE_COUNT, 0)
 
     @property
     def extra_state_attributes(self):
         data = self.coordinator.data or {}
         return {
-            "filtered_image_count": data.get("count", 0),
-            "total_image_count": data.get("total_count", 0),
+            "matching_image_count": data.get(DATA_MATCHING_IMAGE_COUNT, 0),
+            "discovered_image_count": data.get(DATA_DISCOVERED_IMAGE_COUNT, 0),
         }
 
     @property

@@ -110,18 +110,32 @@ class MediaScanner:
 
 
 def apply_filters(
-    items: list[ImageMeta], include_tags: list[str], exclude_tags: list[str], min_rating: int
+    discovered_items: list[ImageMeta],
+    include_tags: list[str],
+    exclude_tags: list[str],
+    min_rating: int,
 ) -> list[ImageMeta]:
+    """Filter discovered images based on tags and rating criteria.
+
+    Args:
+        discovered_items: List of all discovered images from the media scan.
+        include_tags: Only include images with all of these tags (case-insensitive).
+        exclude_tags: Exclude images with any of these tags (case-insensitive).
+        min_rating: Only include images with rating >= min_rating.
+
+    Returns:
+        List of matching images that pass all filters.
+    """
     inc = set(t.lower() for t in include_tags or [])
     exc = set(t.lower() for t in exclude_tags or [])
-    out: list[ImageMeta] = []
-    for it in items:
-        tset = set(s.lower() for s in it.tags)
+    matching: list[ImageMeta] = []
+    for item in discovered_items:
+        tset = set(s.lower() for s in item.tags)
         if inc and not inc.issubset(tset):
             continue
         if exc and tset.intersection(exc):
             continue
-        if (it.rating or 0) < (min_rating or 0):
+        if (item.rating or 0) < (min_rating or 0):
             continue
-        out.append(it)
-    return out
+        matching.append(item)
+    return matching

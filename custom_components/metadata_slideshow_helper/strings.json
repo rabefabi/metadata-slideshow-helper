@@ -2,7 +2,7 @@
   "title": "Metadata Slideshow Helper",
   "config": {
     "error": {
-      "invalid_interval": "Refresh interval must be greater than cycle interval (cycle: {cycle}s, refresh: {refresh}s). Refresh acts as a lower bound; actual rescan occurs when the next cycle is due."
+      "invalid_interval": "Rescan interval must be greater than advance interval (advance: {advance}s, rescan: {refresh}s). The coordinator updates entities every advance interval, but rescans the filesystem only every rescan interval."
     }
   }
 }

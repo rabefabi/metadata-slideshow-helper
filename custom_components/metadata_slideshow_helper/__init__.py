@@ -22,16 +22,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
     from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
     from .const import (
-        CONF_CYCLE_INTERVAL,
+        CONF_ADVANCE_INTERVAL,
         CONF_EXCLUDE_TAGS,
         CONF_INCLUDE_TAGS,
         CONF_MEDIA_DIR,
         CONF_MIN_RATING,
         CONF_REFRESH_INTERVAL,
+        DATA_ADVANCE_INDEX,
         DATA_CONFIG,
         DATA_COORDINATOR,
         DATA_CURRENT_PATH,
-        DEFAULT_CYCLE_INTERVAL,
+        DATA_DISCOVERED_IMAGE_COUNT,
+        DATA_MATCHING_IMAGE_COUNT,
+        DATA_MATCHING_IMAGES,
+        DEFAULT_ADVANCE_INTERVAL,
         DEFAULT_REFRESH_INTERVAL,
         DOMAIN,
     )
@@ -43,7 +47,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
     # Create coordinator that scans media directory
     media_dir = entry.data.get(CONF_MEDIA_DIR, "")
     refresh_interval = entry.data.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL)
-    cycle_interval = entry.data.get(CONF_CYCLE_INTERVAL, DEFAULT_CYCLE_INTERVAL)
+    advance_interval = entry.data.get(CONF_ADVANCE_INTERVAL, DEFAULT_ADVANCE_INTERVAL)
 
     min_rating = entry.data.get(CONF_MIN_RATING, 0)
     include_tags_str = entry.data.get(CONF_INCLUDE_TAGS, "")
@@ -53,12 +57,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
     include_tags = [t.strip() for t in include_tags_str.split(",") if t.strip()]
     exclude_tags = [t.strip() for t in exclude_tags_str.split(",") if t.strip()]
 
-    # Cycling state
-    cycle_index: int = 0
-    last_cycle: float = time.time()
-    cached_items: list = []
-    last_scan: float = 0.0
-    last_total_count: int
+    # Image advancement state
+    advance_index: int = 0
+    last_advance: float = time.time()
+    cached_matching_items: list = []
+    last_rescan: float = 0.0
+    last_discovered_count: int
     # Track if we've already warned about no images to avoid log spam
     no_images_warned: bool = False
 
@@ -68,78 +72,78 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
         # TODO: Refactor to avoid use of nonlocal, use dedicated class to hold state instead
         # https://github.com/rabefabi/metadata-slideshow-helper/issues/9
         nonlocal \
-            last_cycle, \
-            cycle_index, \
-            cached_items, \
-            last_scan, \
-            last_total_count, \
+            last_advance, \
+            advance_index, \
+            cached_matching_items, \
+            last_rescan, \
+            last_discovered_count, \
             no_images_warned
 
         current_time = time.time()
 
-        # Only rescan filesystem periodically, not every update
+        # Only rescan filesystem periodically, not every coordinator update
         if not media_dir:
-            items = []
-        elif not cached_items or (current_time - last_scan) >= float(refresh_interval):
-            _LOGGER.info(f"Scanning media_dir: {media_dir}")
+            matching_items = []
+        elif not cached_matching_items or (current_time - last_rescan) >= float(refresh_interval):
+            _LOGGER.info(f"Rescanning media_dir: {media_dir}")
             scanner = MediaScanner(media_dir)
-            all_items = await hass.async_add_executor_job(scanner.scan)
+            discovered_items = await hass.async_add_executor_job(scanner.scan)
             # Apply filters based on configuration
-            items = apply_filters(all_items, include_tags, exclude_tags, min_rating)
-            cached_items = items
-            last_scan = current_time
-            last_total_count = len(all_items)
-            if items:
+            matching_items = apply_filters(discovered_items, include_tags, exclude_tags, min_rating)
+            cached_matching_items = matching_items
+            last_rescan = current_time
+            last_discovered_count = len(discovered_items)
+            if matching_items:
                 _LOGGER.info(
-                    f"Found {len(items)} images (filtered from {len(all_items)} images total, "
+                    f"Found {len(matching_items)} matching images (from {len(discovered_items)} discovered images, "
                     f"min_rating={min_rating}, include_tags={include_tags}, exclude_tags={exclude_tags})"
                 )
                 no_images_warned = False  # Reset warning flag when images are found
             elif not no_images_warned:
-                # Only log warning once when no images are found
+                # Only log warning once when no images match the filters
                 _LOGGER.warning(
-                    f"No images found in {media_dir} after filtering "
-                    f"(scanned {len(all_items)} images total, min_rating={min_rating}, "
+                    f"No images matched filters in {media_dir} "
+                    f"(discovered {len(discovered_items)} images, min_rating={min_rating}, "
                     f"include_tags={include_tags}, exclude_tags={exclude_tags})"
                 )
                 no_images_warned = True
         else:
-            items = cached_items
+            matching_items = cached_matching_items
 
-        # Auto-cycle through images based on elapsed time
-        time_since_cycle = current_time - last_cycle
+        # Auto-advance to next image based on elapsed time
+        time_since_advance = current_time - last_advance
 
-        if items and time_since_cycle >= cycle_interval:
+        if matching_items and time_since_advance >= advance_interval:
             # TODO: Consider a "smart random" mode, which does a pre-configured amount of images in a row, and then jumps to a random image
             # https://github.com/rabefabi/metadata-slideshow-helper/issues/10
-            cycle_index = (cycle_index + 1) % len(items)
-            last_cycle = current_time
+            advance_index = (advance_index + 1) % len(matching_items)
+            last_advance = current_time
 
         # Ensure index is valid
-        if items:
-            cycle_index = cycle_index % len(items)
-            current_path = items[cycle_index].path
+        if matching_items:
+            advance_index = advance_index % len(matching_items)
+            current_path = matching_items[advance_index].path
         else:
             current_path = None
 
         # TODO: Consider adding dataclass for return type
         # https://github.com/rabefabi/metadata-slideshow-helper/issues/9
         return {
-            "images": items,
-            "count": len(items),
-            "total_count": last_total_count,
+            DATA_MATCHING_IMAGES: matching_items,
+            DATA_MATCHING_IMAGE_COUNT: len(matching_items),
+            DATA_DISCOVERED_IMAGE_COUNT: last_discovered_count,
             DATA_CURRENT_PATH: current_path,
-            "cycle_index": cycle_index,
+            DATA_ADVANCE_INDEX: advance_index,
         }
 
-    # Coordinator update frequency should be frequent enough to handle cycling,
+    # Coordinator update frequency should be frequent enough to handle image advancement,
     # while respecting the configured refresh interval.
     coordinator = DataUpdateCoordinator(
         hass,
         _LOGGER,
         name=f"{DOMAIN}_{entry.entry_id}",
         update_method=async_update_data,
-        update_interval=timedelta(seconds=cycle_interval),
+        update_interval=timedelta(seconds=advance_interval),
     )
 
     await coordinator.async_config_entry_first_refresh()
