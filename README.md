@@ -1,6 +1,7 @@
 # Metadata Slideshow Helper
 
-WIP Vibe Coding Project - I wouldn't trust this yet.
+> [!WARNING]
+> WIP Vibe Coding Project and my first Home Assistant Integration - I wouldn't trust this yet.
 
 ## Configuration Notes
 
@@ -16,4 +17,3 @@ WIP Vibe Coding Project - I wouldn't trust this yet.
 
 - Slideshow Image (image): Shows current image; updates when cycling
 - Slideshow Image Count (sensor, Diagnostic): State is filtered count; attributes include `filtered_image_count` and `total_image_count`
-- Slideshow Status (sensor, Diagnostic): State is `active`/`empty`; attributes include `current_path`, `cycle_index`, `filtered_image_count`, `total_image_count`
