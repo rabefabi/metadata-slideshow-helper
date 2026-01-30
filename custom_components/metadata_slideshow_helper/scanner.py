@@ -27,29 +27,31 @@ class ImageMeta:
 
 
 class MediaScanner:
-    def __init__(self, root: str):
-        self.root = root
+    def __init__(self, roots: list[str]):
+        self.roots = roots
 
     def scan(self) -> list[ImageMeta]:
         results: list[ImageMeta] = []
-        root_path = Path(self.root)
-        if not root_path.is_dir():
-            _LOGGER.warning("Media root not found or not a directory: %s", self.root)
-            return results
 
-        for ext in SUPPORTED_EXT:
-            for p in root_path.rglob(f"*{ext}"):
-                # Skip unreadable files (broken symlinks, permission issues)
-                if not p.is_file() or not os.access(p, os.R_OK):
-                    continue
+        for root in self.roots:
+            root_path = Path(root)
+            if not root_path.is_dir():
+                _LOGGER.warning("Media root not found or not a directory: %s", root)
+                continue
 
-                full = str(p)
-                try:
-                    meta = self._read_metadata(full)
-                    results.append(meta)
-                except Exception:
-                    # On any error, still include the file with empty metadata
-                    results.append(ImageMeta(path=full, tags=[], rating=0, date=None))
+            for ext in SUPPORTED_EXT:
+                for p in root_path.rglob(f"*{ext}"):
+                    # Skip unreadable files (broken symlinks, permission issues)
+                    if not p.is_file() or not os.access(p, os.R_OK):
+                        continue
+
+                    full = str(p)
+                    try:
+                        meta = self._read_metadata(full)
+                        results.append(meta)
+                    except Exception:
+                        # On any error, still include the file with empty metadata
+                        results.append(ImageMeta(path=full, tags=[], rating=0, date=None))
         return results
 
     def _read_metadata(self, path: str) -> ImageMeta:

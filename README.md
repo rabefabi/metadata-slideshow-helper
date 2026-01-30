@@ -5,7 +5,7 @@
 
 ## Configuration Notes
 
-- `media_dir`: Directory to scan for images.
+- `media_dir`: One or more directories to scan for images. For multiple directories, separate paths with commas (e.g., `/media/photos/2020,/media/photos/2021`). All directories will be scanned and their images combined into one slideshow.
 - `min_rating`: Minimum XMP/EXIF rating to include (0–5 scale).
 - `include_tags` / `exclude_tags`: Tag filters applied to image metadata (case-insensitive).
 - `advance_interval` (seconds): Time between advancing to the next matching image.

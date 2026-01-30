@@ -178,8 +178,54 @@ def generate_test_images(
     return created_paths
 
 
+def generate_test_images_across_dirs(
+    parent_dir: Path, num_dirs: int = 2, specs: Sequence[TestImageSpec] = TEST_IMAGE_SPECS
+) -> tuple[list[Path], list[Path]]:
+    """Generate test images split across multiple subdirectories.
+
+    Args:
+        parent_dir: Parent directory under which subdirectories will be created
+        num_dirs: Number of subdirectories to create
+        specs: Image specifications to distribute across directories
+
+    Returns:
+        Tuple of (list of all created image paths, list of directory paths)
+    """
+    parent_dir.mkdir(parents=True, exist_ok=True)
+
+    all_images = []
+    dir_paths = []
+
+    # Split specs evenly across directories
+    specs_per_dir = len(specs) // num_dirs
+
+    for dir_idx in range(num_dirs):
+        dir_path = parent_dir / f"dir_{dir_idx}"
+        dir_path.mkdir(parents=True, exist_ok=True)
+        dir_paths.append(dir_path)
+
+        # Get specs for this directory
+        start_idx = dir_idx * specs_per_dir
+        end_idx = start_idx + specs_per_dir if dir_idx < num_dirs - 1 else len(specs)
+        dir_specs = specs[start_idx:end_idx]
+
+        # Generate images in this directory
+        for spec in dir_specs:
+            output_path = dir_path / spec.filename
+            create_test_image(spec, output_path)
+            all_images.append(output_path)
+
+    _LOGGER.info(
+        "Generated %d test images across %d directories in %s",
+        len(all_images),
+        num_dirs,
+        parent_dir,
+    )
+    return all_images, dir_paths
+
+
 def cleanup_test_images(output_dir: Path) -> None:
-    """Remove all test images from the output directory.
+    """Remove all test images from the output directory and subdirectories.
 
     Args:
         output_dir: Directory containing test images to clean up
@@ -188,6 +234,15 @@ def cleanup_test_images(output_dir: Path) -> None:
         return
 
     count = 0
+    # Clean up files in subdirectories
+    for subdir in output_dir.glob("dir_*"):
+        if subdir.is_dir():
+            for file_path in subdir.glob("*"):
+                if file_path.is_file() and file_path.suffix.lower() in {".jpg", ".jpeg", ".png"}:
+                    file_path.unlink()
+                    count += 1
+
+    # Clean up files in root
     for file_path in output_dir.glob("*"):
         if file_path.is_file() and file_path.suffix.lower() in {".jpg", ".jpeg", ".png"}:
             file_path.unlink()
@@ -248,3 +303,8 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     generate_test_images(SAMPLE_MEDIA_DIR)
     print(f"Generated {len(TEST_IMAGE_SPECS)} test images in {SAMPLE_MEDIA_DIR}")
+
+    # Also generate multi-directory setup
+    multi_dir = SAMPLE_MEDIA_DIR / "multi_dir_test"
+    images, dirs = generate_test_images_across_dirs(multi_dir, num_dirs=2)
+    print(f"Generated {len(images)} test images across {len(dirs)} directories in {multi_dir}")

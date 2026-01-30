@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.2.1 - 2026-01-30
+
+### Improvements
+- Media Scanner: Allowed multiple directories in `media_dir` configuration (comma-separated); scans combined into single slideshow
+
 ## 0.2.0 - 2026-01-30
 
 ### Breaking Changes

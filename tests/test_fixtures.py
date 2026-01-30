@@ -33,13 +33,18 @@ def test_sample_image_by_tag_fixture(sample_image_by_tag) -> None:
 
 
 @pytest.mark.asyncio
-async def test_media_scanner_with_test_images(test_images: list[Path]) -> None:
+async def test_media_scanner_with_test_images(
+    test_images_multidir: tuple[list[Path], list[Path]],
+) -> None:
     """Integration test using the scanner with generated test images."""
-    scanner = MediaScanner(str(test_images[0].parent))
+    # Images are organized in subdirectories (by_year/dir_0, by_year/dir_1)
+    # Scan both directories to get all images
+    all_images, dir_paths = test_images_multidir
+    scanner = MediaScanner([str(d) for d in dir_paths])
     results = scanner.scan()
 
     # Should find all the generated images
-    assert len(results) == len(test_images)
+    assert len(results) == len(all_images)
 
     # Check that ratings were properly read
     ratings = [r.rating for r in results]
