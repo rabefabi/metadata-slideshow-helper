@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+## 0.2.4 - 2026-01-31
+
+### Features
+- **Enhanced diagnostic metrics**: Improved tracking and display of media scan results
+  - Added `failed_image_count`: tracks unreadable/broken image files
+  - Added `non_image_file_count`: tracks non-image files in scan directories
+  - All diagnostic metrics now marked with SensorStateClass.TOTAL for proper Home Assistant display
+
+### Improvements
+- Removed noisy warning logs; all diagnostics now exposed as sensor entities for better visibility
+
+### Internal
+- Refactored data model: Unified `ScanResult` dataclass eliminates redundant types
+- Simplified caching: Entire scan results cached atomically to prevent metric drift
+- Test coverage: Added comprehensive tests for diagnostic metrics and caching behavior
+  - Regression test for metric preservation across cache hits
+  - Multi-directory diagnostic aggregation tests
+
 ## 0.2.3 - 2026-01-31
 
 ### Internal

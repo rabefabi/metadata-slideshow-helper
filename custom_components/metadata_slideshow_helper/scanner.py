@@ -21,9 +21,6 @@ _LOGGER = logging.getLogger(__name__)
 SUPPORTED_EXT = {".jpg", ".jpeg", ".png"}
 
 
-WARN_COOLDOWN = 3600.0  # seconds (1 hour)
-
-
 @dataclass
 class ImageMeta:
     path: str
@@ -37,9 +34,10 @@ class ScanResult:
     """Result from scanning and filtering media."""
 
     discovered: list[ImageMeta]
-    matching: list[ImageMeta]
-    discovered_count: int
-    matching_count: int
+    matching: list[ImageMeta] | None
+    """matching is `None` if filtering was not applied"""
+    failed_count: int
+    non_image_file_count: int
 
 
 class MediaScanner:
@@ -56,10 +54,8 @@ class MediaScanner:
         self.exclude_tags = exclude_tags or []
         self.min_rating = min_rating
         self.rescan_interval = rescan_interval
-        self.cached_items: list[ImageMeta] = []
+        self.cached_scan_result: ScanResult | None = None
         self.last_scan: float = 0.0
-        self.last_warn_time: float = 0.0
-        self.warn_cooldown: float = WARN_COOLDOWN
 
     def scan_and_filter(self) -> ScanResult:
         """Scan media and apply configured filters, with caching and warnings.
@@ -70,43 +66,34 @@ class MediaScanner:
         current_time = time.time()
 
         # Only rescan filesystem periodically
-        if not self.cached_items or (current_time - self.last_scan) >= float(self.rescan_interval):
+        if not self.cached_scan_result or (current_time - self.last_scan) >= float(
+            self.rescan_interval
+        ):
             _LOGGER.info(f"Rescanning media_dirs: {self.roots}")
-            discovered_items = self.scan()
-            self.cached_items = discovered_items
+            self.cached_scan_result = self.scan()
             self.last_scan = current_time
-        else:
-            discovered_items = self.cached_items
 
         # Apply configured filters
         matching_items = apply_filters(
-            discovered_items, self.include_tags, self.exclude_tags, self.min_rating
+            self.cached_scan_result.discovered,
+            self.include_tags,
+            self.exclude_tags,
+            self.min_rating,
         )
 
-        # Log warnings if no matches
-        if not matching_items and (current_time - self.last_warn_time) >= self.warn_cooldown:
-            _LOGGER.warning(
-                f"No images matched filters in {self.roots} "
-                f"(discovered {len(discovered_items)} images, min_rating={self.min_rating}, "
-                f"include_tags={self.include_tags}, exclude_tags={self.exclude_tags})"
-            )
-            self.last_warn_time = current_time
-        elif matching_items:
-            # Reset warning cooldown when images are found
-            self.last_warn_time = 0.0
-            _LOGGER.debug(
-                f"Found {len(matching_items)} matching images (from {len(discovered_items)} discovered)"
-            )
-
+        # TODO: This should be simplified, since only the `matching_items` need to be added/updated in the cached scan result.
         return ScanResult(
-            discovered=discovered_items,
+            discovered=self.cached_scan_result.discovered,
             matching=matching_items,
-            discovered_count=len(discovered_items),
-            matching_count=len(matching_items),
+            failed_count=self.cached_scan_result.failed_count,
+            non_image_file_count=self.cached_scan_result.non_image_file_count,
         )
 
-    def scan(self) -> list[ImageMeta]:
+    def scan(self) -> ScanResult:
+        """Scan the media directories for images and read their metadata, no filtering is applied."""
         results: list[ImageMeta] = []
+        failed_count = 0
+        non_image_file_count = 0
 
         for root in self.roots:
             root_path = Path(root)
@@ -114,10 +101,18 @@ class MediaScanner:
                 _LOGGER.warning("Media root not found or not a directory: %s", root)
                 continue
 
+            # Count non-image files
+            for p in root_path.rglob("*"):
+                if p.is_file():
+                    ext = p.suffix.lower()
+                    if ext not in SUPPORTED_EXT:
+                        non_image_file_count += 1
+
             for ext in SUPPORTED_EXT:
                 for p in root_path.rglob(f"*{ext}"):
                     # Skip unreadable files (broken symlinks, permission issues)
                     if not p.is_file() or not os.access(p, os.R_OK):
+                        failed_count += 1
                         continue
 
                     full = str(p)
@@ -127,7 +122,12 @@ class MediaScanner:
                     except Exception:
                         # On any error, still include the file with empty metadata
                         results.append(ImageMeta(path=full, tags=[], rating=0, date=None))
-        return results
+        return ScanResult(
+            discovered=results,
+            matching=None,
+            failed_count=failed_count,
+            non_image_file_count=non_image_file_count,
+        )
 
     def _read_metadata(self, path: str) -> ImageMeta:
         tags: list[str] = []

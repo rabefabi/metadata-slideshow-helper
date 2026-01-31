@@ -153,14 +153,44 @@ def create_test_image(spec: TestImageSpec, output_path: Path) -> None:
             _LOGGER.error("Failed to write EXIF/XMP metadata for %s: %s", output_path.name, e)
 
 
+def create_broken_image(output_path: Path) -> None:
+    """Create a broken image file by creating a symlink to a non-existent file.
+
+    This simulates files that can't be read (e.g., deleted source, broken symlinks).
+
+    Args:
+        output_path: Path where the broken symlink will be created
+    """
+    # Create a symlink to a non-existent file
+    non_existent = output_path.parent / f"nonexistent_{output_path.stem}"
+    output_path.symlink_to(non_existent)
+    _LOGGER.info("Created broken image symlink: %s", output_path.name)
+
+
+def create_non_image_file(output_path: Path, content: str = "test content") -> None:
+    """Create a non-image file in the media directory.
+
+    Args:
+        output_path: Path where the non-image file will be created
+        content: Text content for the file
+    """
+    output_path.write_text(content)
+    _LOGGER.info("Created non-image file: %s", output_path.name)
+
+
 def generate_test_images(
-    output_dir: Path, specs: Sequence[TestImageSpec] = TEST_IMAGE_SPECS
+    output_dir: Path,
+    specs: Sequence[TestImageSpec] = TEST_IMAGE_SPECS,
+    include_broken_images: bool = False,
+    include_non_image_files: bool = False,
 ) -> list[Path]:
     """Generate a complete set of test images.
 
     Args:
         output_dir: Directory where test images will be created
         specs: Optional list of image specs; uses TEST_IMAGE_SPECS if not provided
+        include_broken_images: If True, also create some corrupted image files
+        include_non_image_files: If True, also create non-image files (.txt, .pdf, etc.)
 
     Returns:
         List of paths to created images
@@ -174,12 +204,34 @@ def generate_test_images(
         create_test_image(spec, output_path)
         created_paths.append(output_path)
 
+    # Optionally create broken images
+    if include_broken_images:
+        for i in range(2):
+            broken_path = output_dir / f"broken_image_{i}.jpg"
+            create_broken_image(broken_path)
+
+    # Optionally create non-image files
+    if include_non_image_files:
+        non_image_files = [
+            ("readme.txt", "This is a readme file"),
+            ("config.json", '{"setting": "value"}'),
+            ("notes.md", "# Notes\n\nSome notes about the images"),
+            ("data.csv", "id,name,value\n1,test,123"),
+        ]
+        for filename, content in non_image_files:
+            non_image_path = output_dir / filename
+            create_non_image_file(non_image_path, content)
+
     _LOGGER.info("Generated %d test images in %s", len(created_paths), output_dir)
     return created_paths
 
 
 def generate_test_images_across_dirs(
-    parent_dir: Path, num_dirs: int = 2, specs: Sequence[TestImageSpec] = TEST_IMAGE_SPECS
+    parent_dir: Path,
+    num_dirs: int = 2,
+    specs: Sequence[TestImageSpec] = TEST_IMAGE_SPECS,
+    include_broken_images: bool = False,
+    include_non_image_files: bool = False,
 ) -> tuple[list[Path], list[Path]]:
     """Generate test images split across multiple subdirectories.
 
@@ -187,6 +239,8 @@ def generate_test_images_across_dirs(
         parent_dir: Parent directory under which subdirectories will be created
         num_dirs: Number of subdirectories to create
         specs: Image specifications to distribute across directories
+        include_broken_images: If True, also create some corrupted image files
+        include_non_image_files: If True, also create non-image files
 
     Returns:
         Tuple of (list of all created image paths, list of directory paths)
@@ -215,6 +269,16 @@ def generate_test_images_across_dirs(
             create_test_image(spec, output_path)
             all_images.append(output_path)
 
+        # Optionally create broken images in each directory
+        if include_broken_images:
+            broken_path = dir_path / f"broken_image_{dir_idx}.jpg"
+            create_broken_image(broken_path)
+
+        # Optionally create non-image files in each directory
+        if include_non_image_files:
+            non_image_path = dir_path / f"notes_{dir_idx}.txt"
+            create_non_image_file(non_image_path, f"Notes for directory {dir_idx}")
+
     _LOGGER.info(
         "Generated %d test images across %d directories in %s",
         len(all_images),
@@ -238,13 +302,13 @@ def cleanup_test_images(output_dir: Path) -> None:
     for subdir in output_dir.glob("dir_*"):
         if subdir.is_dir():
             for file_path in subdir.glob("*"):
-                if file_path.is_file() and file_path.suffix.lower() in {".jpg", ".jpeg", ".png"}:
+                if file_path.is_file():
                     file_path.unlink()
                     count += 1
 
     # Clean up files in root
     for file_path in output_dir.glob("*"):
-        if file_path.is_file() and file_path.suffix.lower() in {".jpg", ".jpeg", ".png"}:
+        if file_path.is_file():
             file_path.unlink()
             count += 1
 
@@ -301,10 +365,22 @@ def _embed_xmp_jpeg(path: Path, xmp_bytes: bytes) -> None:
 if __name__ == "__main__":
     # Allow running this script directly to generate images
     logging.basicConfig(level=logging.INFO)
-    generate_test_images(SAMPLE_MEDIA_DIR)
-    print(f"Generated {len(TEST_IMAGE_SPECS)} test images in {SAMPLE_MEDIA_DIR}")
+    generate_test_images(
+        SAMPLE_MEDIA_DIR,
+        include_broken_images=True,
+        include_non_image_files=True,
+    )
+    print(f"Generated test images in {SAMPLE_MEDIA_DIR}")
 
-    # Also generate multi-directory setup
+    # Also generate multi-directory setup with diagnostics
     multi_dir = SAMPLE_MEDIA_DIR / "multi_dir_test"
-    images, dirs = generate_test_images_across_dirs(multi_dir, num_dirs=2)
-    print(f"Generated {len(images)} test images across {len(dirs)} directories in {multi_dir}")
+    images, dirs = generate_test_images_across_dirs(
+        multi_dir,
+        num_dirs=2,
+        include_broken_images=True,
+        include_non_image_files=True,
+    )
+    print(
+        f"Generated {len(images)} test images across {len(dirs)} directories "
+        f"with broken images and non-image files in {multi_dir}"
+    )

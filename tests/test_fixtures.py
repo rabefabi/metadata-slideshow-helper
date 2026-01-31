@@ -41,12 +41,12 @@ async def test_media_scanner_with_test_images(
     # Scan both directories to get all images
     all_images, dir_paths = test_images_multidir
     scanner = MediaScanner([str(d) for d in dir_paths])
-    results = scanner.scan()
+    scan_result = scanner.scan()
 
     # Should find all the generated images
-    assert len(results) == len(all_images)
+    assert len(scan_result.discovered) == len(all_images)
 
     # Check that ratings were properly read
-    ratings = [r.rating for r in results]
+    ratings = [r.rating for r in scan_result.discovered]
     assert max(ratings) == 5  # noqa: PLR2004 magic number is accepted here
     assert min(ratings) == 0

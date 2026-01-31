@@ -55,8 +55,10 @@ class SlideshowCoordinator:
             DATA_ADVANCE_INDEX,
             DATA_CURRENT_PATH,
             DATA_DISCOVERED_IMAGE_COUNT,
+            DATA_FAILED_IMAGE_COUNT,
             DATA_MATCHING_IMAGE_COUNT,
             DATA_MATCHING_IMAGES,
+            DATA_NON_IMAGE_FILE_COUNT,
             AdvanceMode,
         )
         from .scanner import ScanResult as _ScanResult
@@ -102,8 +104,10 @@ class SlideshowCoordinator:
 
         return {
             DATA_MATCHING_IMAGES: matching_items,
-            DATA_MATCHING_IMAGE_COUNT: scan_result.matching_count,
-            DATA_DISCOVERED_IMAGE_COUNT: scan_result.discovered_count,
+            DATA_MATCHING_IMAGE_COUNT: len(matching_items) if matching_items else 0,
+            DATA_DISCOVERED_IMAGE_COUNT: len(scan_result.discovered),
+            DATA_FAILED_IMAGE_COUNT: scan_result.failed_count,
+            DATA_NON_IMAGE_FILE_COUNT: scan_result.non_image_file_count,
             DATA_CURRENT_PATH: current_path,
             DATA_ADVANCE_INDEX: self.state.advance_index,
         }

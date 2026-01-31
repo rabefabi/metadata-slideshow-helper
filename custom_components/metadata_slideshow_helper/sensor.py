@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
@@ -10,7 +10,9 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpda
 from .const import (
     DATA_COORDINATOR,
     DATA_DISCOVERED_IMAGE_COUNT,
+    DATA_FAILED_IMAGE_COUNT,
     DATA_MATCHING_IMAGE_COUNT,
+    DATA_NON_IMAGE_FILE_COUNT,
     DOMAIN,
     TITLE,
 )
@@ -25,7 +27,10 @@ async def async_setup_entry(
     if coordinator:
         async_add_entities(
             [
-                SlideshowImageCountSensor(coordinator, entry.entry_id),
+                MatchingImageCountSensor(coordinator, entry.entry_id),
+                DiscoveredImageCountSensor(coordinator, entry.entry_id),
+                FailedImageCountSensor(coordinator, entry.entry_id),
+                NonImageFileCountSensor(coordinator, entry.entry_id),
             ],
             True,
         )
@@ -33,14 +38,15 @@ async def async_setup_entry(
         async_add_entities([])
 
 
-class SlideshowImageCountSensor(CoordinatorEntity, SensorEntity):
+class MatchingImageCountSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, coordinator: DataUpdateCoordinator, entry_id: str):
         super().__init__(coordinator)
-        self._attr_name = "Slideshow Image Count"
-        self._attr_unique_id = f"{entry_id}_image_count"
+        self._attr_name = "Matching Image Count"
+        self._attr_unique_id = f"{entry_id}_matching_image_count"
         self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry_id)}, name=TITLE)
         self._attr_icon = "mdi:image-multiple"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_state_class = SensorStateClass.TOTAL
 
     @property
     def native_value(self):
@@ -53,6 +59,75 @@ class SlideshowImageCountSensor(CoordinatorEntity, SensorEntity):
             "matching_image_count": data.get(DATA_MATCHING_IMAGE_COUNT, 0),
             "discovered_image_count": data.get(DATA_DISCOVERED_IMAGE_COUNT, 0),
         }
+
+    @property
+    def should_poll(self) -> bool:
+        return False
+
+    @property
+    def available(self) -> bool:
+        return self.coordinator.last_update_success
+
+
+class DiscoveredImageCountSensor(CoordinatorEntity, SensorEntity):
+    def __init__(self, coordinator: DataUpdateCoordinator, entry_id: str):
+        super().__init__(coordinator)
+        self._attr_name = "Discovered Image Count"
+        self._attr_unique_id = f"{entry_id}_discovered_count"
+        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry_id)}, name=TITLE)
+        self._attr_icon = "mdi:image-search"
+        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_state_class = SensorStateClass.TOTAL
+
+    @property
+    def native_value(self):
+        return (self.coordinator.data or {}).get(DATA_DISCOVERED_IMAGE_COUNT, 0)
+
+    @property
+    def should_poll(self) -> bool:
+        return False
+
+    @property
+    def available(self) -> bool:
+        return self.coordinator.last_update_success
+
+
+class FailedImageCountSensor(CoordinatorEntity, SensorEntity):
+    def __init__(self, coordinator: DataUpdateCoordinator, entry_id: str):
+        super().__init__(coordinator)
+        self._attr_name = "Failed Image Count"
+        self._attr_unique_id = f"{entry_id}_failed_count"
+        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry_id)}, name=TITLE)
+        self._attr_icon = "mdi:image-broken"
+        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_state_class = SensorStateClass.TOTAL
+
+    @property
+    def native_value(self):
+        return (self.coordinator.data or {}).get(DATA_FAILED_IMAGE_COUNT, 0)
+
+    @property
+    def should_poll(self) -> bool:
+        return False
+
+    @property
+    def available(self) -> bool:
+        return self.coordinator.last_update_success
+
+
+class NonImageFileCountSensor(CoordinatorEntity, SensorEntity):
+    def __init__(self, coordinator: DataUpdateCoordinator, entry_id: str):
+        super().__init__(coordinator)
+        self._attr_name = "Non-Image File Count"
+        self._attr_unique_id = f"{entry_id}_non_image_count"
+        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry_id)}, name=TITLE)
+        self._attr_icon = "mdi:file-multiple"
+        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_state_class = SensorStateClass.TOTAL
+
+    @property
+    def native_value(self):
+        return (self.coordinator.data or {}).get(DATA_NON_IMAGE_FILE_COUNT, 0)
 
     @property
     def should_poll(self) -> bool:
