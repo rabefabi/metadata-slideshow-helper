@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 0.2.3 - 2026-01-31
+
+### Internal
+- Code quality: Refactored coordinator and scanner classes for better separation of concerns and cleaner architecture
+  - Moved configuration parameters (filters, rescan interval) from method signatures to class constructors
+  - Extracted magic numbers to named constants (WARN_COOLDOWN, DEFAULT_RESCAN_INTERVAL)
+  - Simplified advancement logic by removing redundant conditional flags
+  - Replaced magic dictionary keys with typed ScanResult dataclass
+
 ## 0.2.2 - 2026-01-30
 
 ### Features

@@ -1,7 +1,7 @@
 {
   "domain": "metadata_slideshow_helper",
   "name": "Metadata Slideshow Helper",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "integration_type": "service",
   "documentation": "https://github.com/rabefabi/metadata-slideshow-helper",
   "issue_tracker": "https://github.com/rabefabi/metadata-slideshow-helper/issues",

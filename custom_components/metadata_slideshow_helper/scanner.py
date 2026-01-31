@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import logging
 import os
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -10,12 +11,17 @@ import exifread
 import piexif
 from PIL import Image
 
+from .const import DEFAULT_RESCAN_INTERVAL
+
 # Suppress exifread warnings for unrecognized formats
 logging.getLogger("exifread").setLevel(logging.ERROR)
 
 _LOGGER = logging.getLogger(__name__)
 
 SUPPORTED_EXT = {".jpg", ".jpeg", ".png"}
+
+
+WARN_COOLDOWN = 3600.0  # seconds (1 hour)
 
 
 @dataclass
@@ -26,9 +32,78 @@ class ImageMeta:
     date: str | None
 
 
+@dataclass
+class ScanResult:
+    """Result from scanning and filtering media."""
+
+    discovered: list[ImageMeta]
+    matching: list[ImageMeta]
+    discovered_count: int
+    matching_count: int
+
+
 class MediaScanner:
-    def __init__(self, roots: list[str]):
+    def __init__(
+        self,
+        roots: list[str],
+        include_tags: list[str] | None = None,
+        exclude_tags: list[str] | None = None,
+        min_rating: int = 0,
+        rescan_interval: float = DEFAULT_RESCAN_INTERVAL,
+    ):
         self.roots = roots
+        self.include_tags = include_tags or []
+        self.exclude_tags = exclude_tags or []
+        self.min_rating = min_rating
+        self.rescan_interval = rescan_interval
+        self.cached_items: list[ImageMeta] = []
+        self.last_scan: float = 0.0
+        self.last_warn_time: float = 0.0
+        self.warn_cooldown: float = WARN_COOLDOWN
+
+    def scan_and_filter(self) -> ScanResult:
+        """Scan media and apply configured filters, with caching and warnings.
+
+        Returns:
+            ScanResult with discovered and matching images and their counts.
+        """
+        current_time = time.time()
+
+        # Only rescan filesystem periodically
+        if not self.cached_items or (current_time - self.last_scan) >= float(self.rescan_interval):
+            _LOGGER.info(f"Rescanning media_dirs: {self.roots}")
+            discovered_items = self.scan()
+            self.cached_items = discovered_items
+            self.last_scan = current_time
+        else:
+            discovered_items = self.cached_items
+
+        # Apply configured filters
+        matching_items = apply_filters(
+            discovered_items, self.include_tags, self.exclude_tags, self.min_rating
+        )
+
+        # Log warnings if no matches
+        if not matching_items and (current_time - self.last_warn_time) >= self.warn_cooldown:
+            _LOGGER.warning(
+                f"No images matched filters in {self.roots} "
+                f"(discovered {len(discovered_items)} images, min_rating={self.min_rating}, "
+                f"include_tags={self.include_tags}, exclude_tags={self.exclude_tags})"
+            )
+            self.last_warn_time = current_time
+        elif matching_items:
+            # Reset warning cooldown when images are found
+            self.last_warn_time = 0.0
+            _LOGGER.debug(
+                f"Found {len(matching_items)} matching images (from {len(discovered_items)} discovered)"
+            )
+
+        return ScanResult(
+            discovered=discovered_items,
+            matching=matching_items,
+            discovered_count=len(discovered_items),
+            matching_count=len(matching_items),
+        )
 
     def scan(self) -> list[ImageMeta]:
         results: list[ImageMeta] = []

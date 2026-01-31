@@ -17,7 +17,7 @@ from .const import (
     CONF_SMART_RANDOM_SEQUENCE_LENGTH,
     DEFAULT_ADVANCE_INTERVAL,
     DEFAULT_ADVANCE_MODE,
-    DEFAULT_REFRESH_INTERVAL,
+    DEFAULT_RESCAN_INTERVAL,
     DEFAULT_SMART_RANDOM_SEQUENCE_LENGTH,
     DOMAIN,
     TITLE,
@@ -43,7 +43,7 @@ class SlideshowHelperConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 ): int,
                 vol.Optional(
                     CONF_REFRESH_INTERVAL,
-                    default=values.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL),
+                    default=values.get(CONF_REFRESH_INTERVAL, DEFAULT_RESCAN_INTERVAL),
                 ): int,
                 vol.Optional(
                     CONF_ADVANCE_MODE,
@@ -61,7 +61,7 @@ class SlideshowHelperConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def _validate_intervals(self, user_input: dict[str, Any]) -> tuple[bool, int, int] | None:
         """Validate refresh > advance intervals. Return (is_valid, advance, refresh) or None if invalid."""
         advance = int(user_input.get(CONF_ADVANCE_INTERVAL, DEFAULT_ADVANCE_INTERVAL))
-        refresh = int(user_input.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL))
+        refresh = int(user_input.get(CONF_REFRESH_INTERVAL, DEFAULT_RESCAN_INTERVAL))
         if refresh <= advance:
             return None
         return (True, advance, refresh)
@@ -71,7 +71,7 @@ class SlideshowHelperConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> config_entries.ConfigFlowResult:
         """Show form with interval validation error."""
         advance = int(user_input.get(CONF_ADVANCE_INTERVAL, DEFAULT_ADVANCE_INTERVAL))
-        refresh = int(user_input.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL))
+        refresh = int(user_input.get(CONF_REFRESH_INTERVAL, DEFAULT_RESCAN_INTERVAL))
         return self.async_show_form(
             step_id=step_id,
             data_schema=self._build_schema(user_input),

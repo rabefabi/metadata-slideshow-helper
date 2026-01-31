@@ -6,8 +6,12 @@ from __future__ import annotations
 import logging
 import random
 import time
+from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import TYPE_CHECKING
+
+from .const import AdvanceMode
+from .scanner import MediaScanner
 
 # Only import Home Assistant types for type checking; runtime imports occur in functions
 if TYPE_CHECKING:  # pragma: no cover - typing only
@@ -18,7 +22,94 @@ _LOGGER = logging.getLogger(__name__)
 PLATFORMS = ["sensor", "image"]
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  # noqa: PLR0915 (too many statements) - consider refactoring if this function grows further
+@dataclass
+class AdvancementState:
+    """Holds the state of image advancement."""
+
+    advance_index: int = 0
+    last_advance: float = field(default_factory=time.time)
+    smart_random_counter: int = 0
+
+
+class SlideshowCoordinator:
+    """Handles image advancement for the slideshow."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        scanner: MediaScanner,
+        advance_interval: float,
+        advance_mode: AdvanceMode,
+        smart_random_sequence_length: int,
+    ):
+        self.hass = hass
+        self.scanner = scanner
+        self.advance_interval = advance_interval
+        self.advance_mode = advance_mode
+        self.smart_random_sequence_length = smart_random_sequence_length
+        self.state = AdvancementState()
+
+    async def async_update_data(self) -> dict:
+        """Fetch and filter media, then handle image advancement."""
+        from .const import (
+            DATA_ADVANCE_INDEX,
+            DATA_CURRENT_PATH,
+            DATA_DISCOVERED_IMAGE_COUNT,
+            DATA_MATCHING_IMAGE_COUNT,
+            DATA_MATCHING_IMAGES,
+            AdvanceMode,
+        )
+        from .scanner import ScanResult as _ScanResult
+
+        scan_result: _ScanResult = await self.hass.async_add_executor_job(
+            self.scanner.scan_and_filter,
+        )
+        matching_items = scan_result.matching
+
+        # Auto-advance to next image based on elapsed time
+        current_time = time.time()
+        time_since_advance = current_time - self.state.last_advance
+
+        if matching_items and time_since_advance >= self.advance_interval:
+            if self.advance_mode == AdvanceMode.SMART_RANDOM:
+                # In smart random mode, advance sequentially through
+                # smart_random_sequence_length images, then jump to a new random position
+                self.state.smart_random_counter += 1
+                if self.state.smart_random_counter >= self.smart_random_sequence_length:
+                    # Jump to a new random image
+                    self.state.advance_index = random.randint(0, len(matching_items) - 1)
+                    self.state.smart_random_counter = 0
+                    _LOGGER.debug(
+                        f"Smart random: jumped to image index {self.state.advance_index}, "
+                        f"will advance sequentially for {self.smart_random_sequence_length} images"
+                    )
+            elif self.advance_mode != AdvanceMode.SEQUENTIAL:
+                msg = (
+                    f"Unknown advance_mode: {self.advance_mode}. Expected "
+                    f"'{AdvanceMode.SEQUENTIAL.value}' or '{AdvanceMode.SMART_RANDOM.value}'."
+                )
+                raise ValueError(msg)
+
+            self.state.advance_index = (self.state.advance_index + 1) % len(matching_items)
+            self.state.last_advance = current_time
+
+        # Ensure index is valid
+        if matching_items:
+            self.state.advance_index = self.state.advance_index % len(matching_items)
+            current_path = matching_items[self.state.advance_index].path
+        else:
+            current_path = None
+
+        return {
+            DATA_MATCHING_IMAGES: matching_items,
+            DATA_MATCHING_IMAGE_COUNT: scan_result.matching_count,
+            DATA_DISCOVERED_IMAGE_COUNT: scan_result.discovered_count,
+            DATA_CURRENT_PATH: current_path,
+            DATA_ADVANCE_INDEX: self.state.advance_index,
+        }
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Import integration modules at runtime to avoid heavy imports on package import
     from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
@@ -31,28 +122,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
         CONF_MIN_RATING,
         CONF_REFRESH_INTERVAL,
         CONF_SMART_RANDOM_SEQUENCE_LENGTH,
-        DATA_ADVANCE_INDEX,
         DATA_CONFIG,
         DATA_COORDINATOR,
-        DATA_CURRENT_PATH,
-        DATA_DISCOVERED_IMAGE_COUNT,
-        DATA_MATCHING_IMAGE_COUNT,
-        DATA_MATCHING_IMAGES,
         DEFAULT_ADVANCE_INTERVAL,
         DEFAULT_ADVANCE_MODE,
-        DEFAULT_REFRESH_INTERVAL,
+        DEFAULT_RESCAN_INTERVAL,
         DEFAULT_SMART_RANDOM_SEQUENCE_LENGTH,
         DOMAIN,
         AdvanceMode,
     )
-    from .scanner import MediaScanner, apply_filters
+    from .scanner import MediaScanner
 
     hass.data.setdefault(DOMAIN, {})
     _LOGGER.info(f"{DOMAIN} starting")
 
-    # Create coordinator that scans media directory
+    # Parse configuration
     media_dir_str = entry.data.get(CONF_MEDIA_DIR, "")
-    refresh_interval = entry.data.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL)
+    rescan_interval = entry.data.get(CONF_REFRESH_INTERVAL, DEFAULT_RESCAN_INTERVAL)
     advance_interval = entry.data.get(CONF_ADVANCE_INTERVAL, DEFAULT_ADVANCE_INTERVAL)
     advance_mode = AdvanceMode(entry.data.get(CONF_ADVANCE_MODE, DEFAULT_ADVANCE_MODE.value))
 
@@ -69,116 +155,31 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  #
     include_tags = [t.strip() for t in include_tags_str.split(",") if t.strip()]
     exclude_tags = [t.strip() for t in exclude_tags_str.split(",") if t.strip()]
 
-    # Image advancement state
-    advance_index: int = 0
-    last_advance: float = time.time()
-    cached_matching_items: list = []
-    last_rescan: float = 0.0
-    last_discovered_count: int = 0
-    # Track if we've already warned about no images to avoid log spam
-    no_images_warned: bool = False
-    # For smart random mode: track the sequence counter
-    smart_random_counter: int = 0
+    # Create media scanner with filter configuration
+    scanner = MediaScanner(
+        roots=media_dirs,
+        include_tags=include_tags,
+        exclude_tags=exclude_tags,
+        min_rating=min_rating,
+        rescan_interval=rescan_interval,
+    )
 
-    async def async_update_data():  # noqa: PLR0912 (too many branches) - see issue #9
-        """Fetch data from media scanner and handle image cycling."""
-
-        # TODO: Refactor to avoid use of nonlocal, use dedicated class to hold state instead
-        # https://github.com/rabefabi/metadata-slideshow-helper/issues/9
-        nonlocal \
-            last_advance, \
-            advance_index, \
-            cached_matching_items, \
-            last_rescan, \
-            last_discovered_count, \
-            no_images_warned, \
-            smart_random_counter
-
-        current_time = time.time()
-
-        # Only rescan filesystem periodically, not every coordinator update
-        if not media_dirs:
-            matching_items = []
-        elif not cached_matching_items or (current_time - last_rescan) >= float(refresh_interval):
-            _LOGGER.info(f"Rescanning media_dirs: {media_dirs}")
-            scanner = MediaScanner(media_dirs)
-            discovered_items = await hass.async_add_executor_job(scanner.scan)
-            # Apply filters based on configuration
-            matching_items = apply_filters(discovered_items, include_tags, exclude_tags, min_rating)
-            cached_matching_items = matching_items
-            last_rescan = current_time
-            last_discovered_count = len(discovered_items)
-            if matching_items:
-                _LOGGER.info(
-                    f"Found {len(matching_items)} matching images (from {len(discovered_items)} discovered images, "
-                    f"min_rating={min_rating}, include_tags={include_tags}, exclude_tags={exclude_tags})"
-                )
-                no_images_warned = False  # Reset warning flag when images are found
-            elif not no_images_warned:
-                # Only log warning once when no images match the filters
-                _LOGGER.warning(
-                    f"No images matched filters in {media_dirs} "
-                    f"(discovered {len(discovered_items)} images, min_rating={min_rating}, "
-                    f"include_tags={include_tags}, exclude_tags={exclude_tags})"
-                )
-                no_images_warned = True
-        else:
-            matching_items = cached_matching_items
-
-        # Auto-advance to next image based on elapsed time
-        time_since_advance = current_time - last_advance
-
-        if matching_items and time_since_advance >= advance_interval:
-            if advance_mode == AdvanceMode.SMART_RANDOM:
-                # In smart random mode, advance sequentially through
-                # smart_random_sequence_length images, then jump to a new random position
-                smart_random_counter += 1
-                if smart_random_counter >= smart_random_sequence_length:
-                    # Jump to a new random image
-                    advance_index = random.randint(0, len(matching_items) - 1)
-                    smart_random_counter = 0
-                    _LOGGER.debug(
-                        f"Smart random: jumped to image index {advance_index}, "
-                        f"will advance sequentially for {smart_random_sequence_length} images"
-                    )
-                else:
-                    # Continue sequentially within the current sequence
-                    advance_index = (advance_index + 1) % len(matching_items)
-            elif advance_mode == AdvanceMode.SEQUENTIAL:
-                # Sequential mode: always advance to next image
-                advance_index = (advance_index + 1) % len(matching_items)
-            else:
-                msg = (
-                    f"Unknown advance_mode: {advance_mode}. Expected "
-                    f"'{AdvanceMode.SEQUENTIAL.value}' or '{AdvanceMode.SMART_RANDOM.value}'."
-                )
-                raise ValueError(msg)
-            last_advance = current_time
-
-        # Ensure index is valid
-        if matching_items:
-            advance_index = advance_index % len(matching_items)
-            current_path = matching_items[advance_index].path
-        else:
-            current_path = None
-
-        # TODO: Consider adding dataclass for return type
-        # https://github.com/rabefabi/metadata-slideshow-helper/issues/9
-        return {
-            DATA_MATCHING_IMAGES: matching_items,
-            DATA_MATCHING_IMAGE_COUNT: len(matching_items),
-            DATA_DISCOVERED_IMAGE_COUNT: last_discovered_count,
-            DATA_CURRENT_PATH: current_path,
-            DATA_ADVANCE_INDEX: advance_index,
-        }
+    # Create the slideshow coordinator
+    slideshow_coordinator = SlideshowCoordinator(
+        hass=hass,
+        scanner=scanner,
+        advance_interval=advance_interval,
+        advance_mode=advance_mode,
+        smart_random_sequence_length=smart_random_sequence_length,
+    )
 
     # Coordinator update frequency should be frequent enough to handle image advancement,
-    # while respecting the configured refresh interval.
+    # while respecting the configured rescan interval.
     coordinator = DataUpdateCoordinator(
         hass,
         _LOGGER,
         name=f"{DOMAIN}_{entry.entry_id}",
-        update_method=async_update_data,
+        update_method=slideshow_coordinator.async_update_data,
         update_interval=timedelta(seconds=advance_interval),
     )
 

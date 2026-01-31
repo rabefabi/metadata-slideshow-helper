@@ -9,9 +9,9 @@
 - `min_rating`: Minimum XMP/EXIF rating to include (0–5 scale).
 - `include_tags` / `exclude_tags`: Tag filters applied to image metadata (case-insensitive).
 - `advance_interval` (seconds): Time between advancing to the next matching image.
-- `refresh_interval` (seconds): Time between rescanning the media directory for new/changed files.
+- `rescan_interval` (seconds): Time between rescanning the media directory for new/changed files.
   - Must be greater than `advance_interval`.
-  - The coordinator updates entities every `advance_interval`, but only rescans the filesystem every `refresh_interval` to reduce I/O.
+  - The coordinator updates entities every `advance_interval`, but only rescans the filesystem every `rescan_interval` to reduce I/O.
 - `advance_mode`: Image advancement mode (`sequential` or `smart_random`).
   - `sequential`: Always advance to the next image in order (default).
   - `smart_random`: Advance sequentially for N images, then jump to a random position.
@@ -28,5 +28,5 @@
 |------|-----------|
 | **Discovered images** | All image files found in the media directory during a rescan. |
 | **Matching images** | Images from the discovered set that pass all configured filters (min_rating, include_tags, exclude_tags). |
-| **Rescan** | Walking the media directory and reading image metadata; controlled by `refresh_interval`. |
+| **Rescan** | Walking the media directory and reading image metadata; controlled by `rescan_interval`. |
 | **Advance** | Automatically moving to the next matching image; happens every `advance_interval` seconds. |
