@@ -13,7 +13,7 @@ from .const import (
     CONF_INCLUDE_TAGS,
     CONF_MEDIA_DIR,
     CONF_MIN_RATING,
-    CONF_REFRESH_INTERVAL,
+    CONF_RESCAN_INTERVAL,
     CONF_SMART_RANDOM_SEQUENCE_LENGTH,
     DEFAULT_ADVANCE_INTERVAL,
     DEFAULT_ADVANCE_MODE,
@@ -27,23 +27,32 @@ from .const import (
 
 class SlideshowHelperConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 2
-    MINOR_VERSION = 2
+    MINOR_VERSION = 3
 
     def _build_schema(self, defaults: dict[str, Any] | None = None) -> vol.Schema:
         values = defaults or {}
         return vol.Schema(
             {
                 vol.Required(CONF_MEDIA_DIR, default=values.get(CONF_MEDIA_DIR, "")): str,
-                vol.Optional(CONF_MIN_RATING, default=values.get(CONF_MIN_RATING, 0)): int,
-                vol.Optional(CONF_INCLUDE_TAGS, default=values.get(CONF_INCLUDE_TAGS, "")): str,
-                vol.Optional(CONF_EXCLUDE_TAGS, default=values.get(CONF_EXCLUDE_TAGS, "")): str,
+                vol.Optional(
+                    CONF_MIN_RATING,
+                    default=values.get(CONF_MIN_RATING, 0),
+                ): int,
+                vol.Optional(
+                    CONF_INCLUDE_TAGS,
+                    default=values.get(CONF_INCLUDE_TAGS, ""),
+                ): str,
+                vol.Optional(
+                    CONF_EXCLUDE_TAGS,
+                    default=values.get(CONF_EXCLUDE_TAGS, ""),
+                ): str,
                 vol.Optional(
                     CONF_ADVANCE_INTERVAL,
                     default=values.get(CONF_ADVANCE_INTERVAL, DEFAULT_ADVANCE_INTERVAL),
                 ): int,
                 vol.Optional(
-                    CONF_REFRESH_INTERVAL,
-                    default=values.get(CONF_REFRESH_INTERVAL, DEFAULT_RESCAN_INTERVAL),
+                    CONF_RESCAN_INTERVAL,
+                    default=values.get(CONF_RESCAN_INTERVAL, DEFAULT_RESCAN_INTERVAL),
                 ): int,
                 vol.Optional(
                     CONF_ADVANCE_MODE,
@@ -52,33 +61,32 @@ class SlideshowHelperConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Optional(
                     CONF_SMART_RANDOM_SEQUENCE_LENGTH,
                     default=values.get(
-                        CONF_SMART_RANDOM_SEQUENCE_LENGTH, DEFAULT_SMART_RANDOM_SEQUENCE_LENGTH
+                        CONF_SMART_RANDOM_SEQUENCE_LENGTH,
+                        DEFAULT_SMART_RANDOM_SEQUENCE_LENGTH,
                     ),
                 ): int,
             }
         )
 
     def _validate_intervals(self, user_input: dict[str, Any]) -> tuple[bool, int, int] | None:
-        """Validate refresh > advance intervals. Return (is_valid, advance, refresh) or None if invalid."""
-        advance = int(user_input.get(CONF_ADVANCE_INTERVAL, DEFAULT_ADVANCE_INTERVAL))
-        refresh = int(user_input.get(CONF_REFRESH_INTERVAL, DEFAULT_RESCAN_INTERVAL))
-        if refresh <= advance:
+        advance_interval = int(user_input.get(CONF_ADVANCE_INTERVAL, DEFAULT_ADVANCE_INTERVAL))
+        rescan_interval = int(user_input.get(CONF_RESCAN_INTERVAL, DEFAULT_RESCAN_INTERVAL))
+        if rescan_interval <= advance_interval:
             return None
-        return (True, advance, refresh)
+        return (True, advance_interval, rescan_interval)
 
     def _show_interval_error(
         self, step_id: str, user_input: dict[str, Any]
     ) -> config_entries.ConfigFlowResult:
-        """Show form with interval validation error."""
-        advance = int(user_input.get(CONF_ADVANCE_INTERVAL, DEFAULT_ADVANCE_INTERVAL))
-        refresh = int(user_input.get(CONF_REFRESH_INTERVAL, DEFAULT_RESCAN_INTERVAL))
+        advance_interval = int(user_input.get(CONF_ADVANCE_INTERVAL, DEFAULT_ADVANCE_INTERVAL))
+        rescan_interval = int(user_input.get(CONF_RESCAN_INTERVAL, DEFAULT_RESCAN_INTERVAL))
         return self.async_show_form(
             step_id=step_id,
             data_schema=self._build_schema(user_input),
             errors={"base": "invalid_interval"},
             description_placeholders={
-                "advance": str(advance),
-                "refresh": str(refresh),
+                "advance": str(advance_interval),
+                "rescan": str(rescan_interval),
             },
         )
 
