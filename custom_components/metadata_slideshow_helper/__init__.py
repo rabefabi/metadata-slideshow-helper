@@ -124,7 +124,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         CONF_INCLUDE_TAGS,
         CONF_MEDIA_DIR,
         CONF_MIN_RATING,
-        CONF_REFRESH_INTERVAL,
+        CONF_RESCAN_INTERVAL,
         CONF_SMART_RANDOM_SEQUENCE_LENGTH,
         DATA_CONFIG,
         DATA_COORDINATOR,
@@ -142,7 +142,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Parse configuration
     media_dir_str = entry.data.get(CONF_MEDIA_DIR, "")
-    rescan_interval = entry.data.get(CONF_REFRESH_INTERVAL, DEFAULT_RESCAN_INTERVAL)
+    rescan_interval = entry.data.get(CONF_RESCAN_INTERVAL, DEFAULT_RESCAN_INTERVAL)
     advance_interval = entry.data.get(CONF_ADVANCE_INTERVAL, DEFAULT_ADVANCE_INTERVAL)
     advance_mode = AdvanceMode(entry.data.get(CONF_ADVANCE_MODE, DEFAULT_ADVANCE_MODE.value))
 

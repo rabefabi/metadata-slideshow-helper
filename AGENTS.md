@@ -19,6 +19,20 @@
 - After edits that affect Home Assistant or after larger changes, (re)start the home assistant container via the `docker-compose.yml` and check logs for errors.
   - If necessary, verify the UI via the Playwright MCP server
 
+### UI Debugging with Playwright
+
+To inspect and test the Home Assistant UI (config flows, forms, etc.) directly:
+
+1. **Navigate to Home Assistant**: Use `mcp_playwright_browser_navigate` to open `http://localhost:8123`
+2. **Login**: Fill credentials with `mcp_playwright_browser_fill_form` and click login button
+3. **Navigate to feature**: Use snapshot or click to navigate through UI (Settings > Devices & services > Integration name)
+4. **Open dialogs/forms**: Click menus and options to open the config flow dialog
+5. **Inspect structure**: Use `mcp_playwright_browser_snapshot()` to see accessibility tree with refs for each element
+6. **Take screenshots**: Use `mcp_playwright_browser_take_screenshot()` to visually verify rendering
+7. **Extract data**: Use `mcp_playwright_browser_run_code()` to evaluate JavaScript and inspect form data/schema
+
+This loop allows you to verify form rendering, field labels, descriptions, validation messages, and overall UI behavior without leaving the coding environment.
+
 ## Documentation
 
 - Document major decisions in `docs/` and keep responses concise with required link formatting.

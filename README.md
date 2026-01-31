@@ -2,6 +2,8 @@
 
 > [!WARNING]
 > WIP Vibe Coding Project and my first Home Assistant Integration - I wouldn't trust this yet.
+> If you want to try it out nonetheless, click below:  
+> [![Open your Home Assistant instance and open this repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=rabefabi&repository=metadata-slideshow-helper&category=integration)
 
 ## Configuration Notes
 
