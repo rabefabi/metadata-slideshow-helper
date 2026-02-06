@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+## 0.2.5 - 2026-02-06
+
+### Documentation
+- **Enhanced developer guides**: Added comprehensive UI debugging section with Playwright MCP server workflows for testing Home Assistant config flows and forms
+- **Installation accessibility**: Added HACS badge to README for easy one-click installation from Home Assistant Community Store
+- **Coding standards**: Updated AGENTS.md with manifest.json key sorting requirements and clarified `uv sync --all-extras` usage
+
+### Improvements
+- **Terminology consistency**: Renamed `refresh_interval` → `rescan_interval` throughout codebase for clearer intent (`CONF_REFRESH_INTERVAL` → `CONF_RESCAN_INTERVAL`)
+- **Code formatting**: Improved schema field alignment in config flow for better readability
+- **Variable naming**: Enhanced clarity in interval validation methods (e.g., `advance` → `advance_interval`, `refresh` → `rescan_interval`)
+- **Error messages**: Updated interval validation message placeholder from `{refresh}` to `{rescan}` for consistency
+
+### Configuration
+- **Manifest structure**: Sorted manifest.json keys alphabetically (`domain`, `name`, then alphabetical) per Home Assistant Hassfest requirements
+- **Config schema**: Bumped MINOR_VERSION from 2 to 3 to trigger config flow for updated terminology
+
+### CI/CD
+- **Validation workflows**: Added GitHub Actions for HACS validation and hassfest validation on push, PR, and scheduled checks
+
 ## 0.2.4 - 2026-01-31
 
 ### Features
