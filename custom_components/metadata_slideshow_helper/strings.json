@@ -1,8 +1,18 @@
 {
   "title": "Metadata Slideshow Helper",
   "config": {
+    "step": {
+      "user": {
+        "title": "Configure Metadata Slideshow Helper",
+        "description": "Select the media directory and configure scan intervals."
+      },
+      "reconfigure": {
+        "title": "Reconfigure Metadata Slideshow Helper",
+        "description": "Update the configuration for Metadata Slideshow Helper."
+      }
+    },
     "error": {
-      "invalid_interval": "Rescan interval must be greater than advance interval (advance: {advance}s, rescan: {refresh}s). The coordinator updates entities every advance interval, but rescans the filesystem only every rescan interval."
+      "invalid_interval": "Rescan interval must be greater than advance interval (advance: {advance}s, rescan: {rescan}s). The coordinator updates entities every advance interval, but rescans the filesystem only every rescan interval."
     }
   }
 }
