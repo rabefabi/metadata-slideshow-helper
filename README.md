@@ -21,8 +21,11 @@
 
 ## Entities
 
-- Slideshow Image (image): Shows current image; updates when advancing to the next match
-- Slideshow Image Count (sensor, Diagnostic): State is matching image count; attributes include `matching_image_count` and `discovered_image_count`
+- **Slideshow** (image): Shows current image; updates when advancing to the next match
+- **Matching Image Count** (sensor, Diagnostic): State is count of images passing all filters
+- **Discovered Image Count** (sensor, Diagnostic): Total image files found in media directory
+- **Failed Image Count** (sensor, Diagnostic): Image files that couldn't be read or have corrupted metadata
+- **Non-Image File Count** (sensor, Diagnostic): Non-image files encountered during scan
 
 ## Terminology
 

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Documentation
+
+- Updated README with new diagnostic sensor naming
+
 ## 0.2.5 - 2026-02-06
 
 ### Documentation
