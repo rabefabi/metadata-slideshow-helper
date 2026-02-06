@@ -4,11 +4,12 @@
 
 - You have access to the latest documentation via the Context7 MCP plugin - use it to look up the current state of the art for all libraries and frameworks.
 - Add comments only when helpful for non-obvious logic.
-- For dependency management use `uv sync`, never use `uv pip`.
+- For dependency management use `uv sync --all-extras`, never use `uv pip` or plain `uv sync`. This ensures all version constraints are properly maintained.
 - Avoid magic strings and numbers - use constants, enums or dataclasses instead.
 - When initializing variables, don't assign reasonable default values, if they are overwritten by config. E.g., don't set `refresh_interval = 300` if the config will always provide a value for it.
 - When documenting code, don't describe the difference to the previous implementation, just describe the current implementation.
 - **Home Assistant dependencies**: Keep `pyproject.toml` (dev/test) and `custom_components/<component>/manifest.json` (runtime) in sync. Any runtime dependency for the integration must be declared in `manifest.json` under `requirements`.
+  - **manifest.json**: Keys must be sorted: `domain`, `name`, then alphabetical. Hassfest validation will fail if keys are out of order.
 - **Error handling**: Use `contextlib.suppress(ValueError)` instead of try-except-pass blocks for handling specific exceptions. This is more concise and linter-friendly.
 - **Library functions over utilities**: Prefer using built-in or library functions (e.g., Pillow's `getxmp()`) over writing custom parsing/extraction utilities. Only create helpers when no library function covers the use case.
 - **YAGNI principle**: Implement only what is needed for the current use case. Avoid speculative features, fallbacks, or abstractions that aren't yet required. Revisit when actual requirements emerge.
@@ -18,6 +19,20 @@
 - Tooling: `uv run pre-commit run --all-files` to run all pre-commit checks and pytest tests locally. This will also handle formatting for you.
 - After edits that affect Home Assistant or after larger changes, (re)start the home assistant container via the `docker-compose.yml` and check logs for errors.
   - If necessary, verify the UI via the Playwright MCP server
+
+### UI Debugging with Playwright
+
+To inspect and test the Home Assistant UI (config flows, forms, etc.) directly:
+
+1. **Navigate to Home Assistant**: Use `mcp_playwright_browser_navigate` to open `http://localhost:8123`
+2. **Login**: Fill credentials with `mcp_playwright_browser_fill_form` and click login button
+3. **Navigate to feature**: Use snapshot or click to navigate through UI (Settings > Devices & services > Integration name)
+4. **Open dialogs/forms**: Click menus and options to open the config flow dialog
+5. **Inspect structure**: Use `mcp_playwright_browser_snapshot()` to see accessibility tree with refs for each element
+6. **Take screenshots**: Use `mcp_playwright_browser_take_screenshot()` to visually verify rendering
+7. **Extract data**: Use `mcp_playwright_browser_run_code()` to evaluate JavaScript and inspect form data/schema
+
+This loop allows you to verify form rendering, field labels, descriptions, validation messages, and overall UI behavior without leaving the coding environment.
 
 ## Documentation
 
