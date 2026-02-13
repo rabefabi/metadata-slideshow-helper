@@ -3,6 +3,7 @@ ha-config
 !ha-config/.gitkeep
 sample-media
 !sample-media/.gitkeep
+.haconfig
 
 ## AI Tooling
 .playwright-mcp
@@ -44,6 +45,10 @@ env/
 # Home Assistant
 home-assistant.log
 secrets.yaml
+
+# DevContainer - ignore actual secrets and config, but keep templates
+.devcontainer/secrets.yaml
+!.devcontainer/secrets.yaml.template
 
 # OS
 .DS_Store

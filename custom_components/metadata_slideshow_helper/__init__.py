@@ -10,7 +10,26 @@ from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
-from .const import AdvanceMode
+import voluptuous as vol
+from homeassistant.helpers import config_validation as cv
+
+from .const import (
+    CONF_ADVANCE_INTERVAL,
+    CONF_ADVANCE_MODE,
+    CONF_EXCLUDE_TAGS,
+    CONF_INCLUDE_TAGS,
+    CONF_MEDIA_DIR,
+    CONF_MIN_RATING,
+    CONF_RESCAN_INTERVAL,
+    CONF_SMART_RANDOM_SEQUENCE_LENGTH,
+    DEFAULT_ADVANCE_INTERVAL,
+    DEFAULT_ADVANCE_MODE,
+    DEFAULT_MIN_RATING,
+    DEFAULT_RESCAN_INTERVAL,
+    DEFAULT_SMART_RANDOM_SEQUENCE_LENGTH,
+    DOMAIN,
+    AdvanceMode,
+)
 from .scanner import MediaScanner
 
 # Only import Home Assistant types for type checking; runtime imports occur in functions
@@ -20,6 +39,39 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
 
 _LOGGER = logging.getLogger(__name__)
 PLATFORMS = ["sensor", "image"]
+
+# YAML Configuration Schema - Constants imported above
+CONFIG_SCHEMA = vol.Schema(
+    {
+        DOMAIN: vol.All(
+            cv.ensure_list,
+            [
+                vol.Schema(
+                    {
+                        vol.Required(CONF_MEDIA_DIR): cv.string,
+                        vol.Optional(CONF_MIN_RATING, default=DEFAULT_MIN_RATING): cv.positive_int,
+                        vol.Optional(CONF_INCLUDE_TAGS, default=""): cv.string,
+                        vol.Optional(CONF_EXCLUDE_TAGS, default=""): cv.string,
+                        vol.Optional(
+                            CONF_ADVANCE_INTERVAL, default=DEFAULT_ADVANCE_INTERVAL
+                        ): cv.positive_int,
+                        vol.Optional(
+                            CONF_RESCAN_INTERVAL, default=DEFAULT_RESCAN_INTERVAL
+                        ): cv.positive_int,
+                        vol.Optional(CONF_ADVANCE_MODE, default=DEFAULT_ADVANCE_MODE.value): vol.In(
+                            [mode.value for mode in AdvanceMode]
+                        ),
+                        vol.Optional(
+                            CONF_SMART_RANDOM_SEQUENCE_LENGTH,
+                            default=DEFAULT_SMART_RANDOM_SEQUENCE_LENGTH,
+                        ): cv.positive_int,
+                    }
+                )
+            ],
+        )
+    },
+    extra=vol.ALLOW_EXTRA,
+)
 
 
 @dataclass
@@ -113,6 +165,46 @@ class SlideshowCoordinator:
         }
 
 
+async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+    """Set up the Metadata Slideshow Helper integration from YAML configuration."""
+    if DOMAIN not in config:
+        return True
+
+    # Process each YAML configuration entry
+    for idx, conf in enumerate(config[DOMAIN]):
+        # Create a unique entry_id based on media_dir to avoid duplicates
+        media_dir = conf[CONF_MEDIA_DIR]
+        entry_id = f"yaml_{media_dir.replace('/', '_')}_{idx}"
+
+        # Check if entry already exists
+        existing_entry = None
+        for entry in hass.config_entries.async_entries(DOMAIN):
+            if entry.unique_id == entry_id:
+                existing_entry = entry
+                break
+
+        if existing_entry:
+            # Update existing entry options
+            hass.config_entries.async_update_entry(existing_entry, options=conf)
+            _LOGGER.info("Updated YAML config entry for %s", media_dir)
+        else:
+            # Create new config entry from YAML
+            hass.async_create_task(
+                hass.config_entries.flow.async_init(
+                    DOMAIN,
+                    context={"source": "import"},
+                    data={
+                        "media_dir": media_dir,
+                        "unique_id": entry_id,
+                        "options": conf,
+                    },
+                )
+            )
+            _LOGGER.info("Creating YAML config entry for %s", media_dir)
+
+    return True
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Import integration modules at runtime to avoid heavy imports on package import
     from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
@@ -140,19 +232,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     _LOGGER.info(f"{DOMAIN} starting")
 
-    # Parse configuration
-    media_dir_str = entry.data.get(CONF_MEDIA_DIR, "")
-    rescan_interval = entry.data.get(CONF_RESCAN_INTERVAL, DEFAULT_RESCAN_INTERVAL)
-    advance_interval = entry.data.get(CONF_ADVANCE_INTERVAL, DEFAULT_ADVANCE_INTERVAL)
-    advance_mode = AdvanceMode(entry.data.get(CONF_ADVANCE_MODE, DEFAULT_ADVANCE_MODE.value))
+    # Parse configuration - prefer options over data for YAML imports
+    config_source = entry.options if entry.options else entry.data
 
-    smart_random_sequence_length = entry.data.get(
+    media_dir_str = config_source.get(CONF_MEDIA_DIR, "")
+    rescan_interval = config_source.get(CONF_RESCAN_INTERVAL, DEFAULT_RESCAN_INTERVAL)
+    advance_interval = config_source.get(CONF_ADVANCE_INTERVAL, DEFAULT_ADVANCE_INTERVAL)
+    advance_mode = AdvanceMode(config_source.get(CONF_ADVANCE_MODE, DEFAULT_ADVANCE_MODE.value))
+
+    smart_random_sequence_length = config_source.get(
         CONF_SMART_RANDOM_SEQUENCE_LENGTH, DEFAULT_SMART_RANDOM_SEQUENCE_LENGTH
     )
 
-    min_rating = entry.data.get(CONF_MIN_RATING, 0)
-    include_tags_str = entry.data.get(CONF_INCLUDE_TAGS, "")
-    exclude_tags_str = entry.data.get(CONF_EXCLUDE_TAGS, "")
+    min_rating = config_source.get(CONF_MIN_RATING, 0)
+    include_tags_str = config_source.get(CONF_INCLUDE_TAGS, "")
+    exclude_tags_str = config_source.get(CONF_EXCLUDE_TAGS, "")
 
     # Parse comma-separated directories and tags
     media_dirs = [d.strip() for d in media_dir_str.split(",") if d.strip()]
@@ -190,7 +284,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await coordinator.async_config_entry_first_refresh()
 
     hass.data[DOMAIN][entry.entry_id] = {
-        DATA_CONFIG: entry.data,
+        DATA_CONFIG: config_source,
         DATA_COORDINATOR: coordinator,
     }
 

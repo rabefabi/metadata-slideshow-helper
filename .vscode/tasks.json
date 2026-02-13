@@ -1,0 +1,61 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run Home Assistant",
+      "type": "shell",
+      "command": "bash",
+      "args": ["scripts/start"],
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^(.*error|.*Error|.*ERROR|.*failed).*$",
+          "severity": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*Syncing dependencies.*$",
+          "endsPattern": "^.*listening on.*|^.*Home Assistant is running.*|^.*Started Home Assistant.*$"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "Reset Home Assistant Config",
+      "type": "shell",
+      "command": "bash",
+      "args": ["scripts/reset-config"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Initialize Home Assistant (Headless)",
+      "type": "shell",
+      "command": "bash",
+      "args": ["scripts/init-headless"],
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^(.*ERROR|.*error|.*Error|.*failed).*$",
+          "severity": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*Setting up Home Assistant.*$",
+          "endsPattern": "^.*Home Assistant is now running in headless mode.*$"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "detail": "Full automated setup: resets config, starts Home Assistant, creates admin user"
+    }
+  ]
+}

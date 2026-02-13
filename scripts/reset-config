@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Reset Home Assistant configuration to fresh state
+# Wrapper around init-headless that resets config without starting Home Assistant
+# Useful for development when you want a clean state
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Call init-headless with --no-start flag to reset config without starting HA
+bash "$SCRIPT_DIR/init-headless" --no-start
+
+echo "✓ Configuration reset complete. Directory ready for fresh start."

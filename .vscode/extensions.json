@@ -1,11 +1,12 @@
 {
+  // Keep in sync with .devcontainer/devcontainer.json
   "recommendations": [
     "ms-python.python",
     "ms-python.vscode-pylance",
     "ms-python.debugpy",
     "charliermarsh.ruff",
     "ms-python.mypy-type-checker",
-    "GitHub.copilot",
+    "github.copilot-chat",
     "eamodio.gitlens",
     "redhat.vscode-yaml",
     "ms-azuretools.vscode-containers",

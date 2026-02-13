@@ -17,7 +17,7 @@
 ## Testing & Verification
 
 - Tooling: `uv run pre-commit run --all-files` to run all pre-commit checks and pytest tests locally. This will also handle formatting for you.
-- After edits that affect Home Assistant or after larger changes, (re)start the home assistant container via the `docker-compose.yml` and check logs for errors.
+- After edits that affect Home Assistant or after larger changes, start Home Assistant via the Command (Command Palette: `Tasks: Run Task → Run Home Assistant`) and check logs for errors.
   - If necessary, verify the UI via the Playwright MCP server
 
 ### UI Debugging with Playwright

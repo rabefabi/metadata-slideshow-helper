@@ -113,3 +113,23 @@ class SlideshowHelperConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="reconfigure",
             data_schema=self._build_schema(dict(config_entry.data)),
         )
+
+    async def async_step_import(
+        self, import_data: dict[str, Any]
+    ) -> config_entries.ConfigFlowResult:
+        """Import configuration from YAML."""
+        media_dir = import_data.get("media_dir")
+        unique_id = import_data.get("unique_id")
+        options = import_data.get("options", {})
+
+        # Set unique_id to prevent duplicates
+        if unique_id:
+            await self.async_set_unique_id(unique_id)
+            self._abort_if_unique_id_configured()
+
+        # Create entry with options
+        return self.async_create_entry(
+            title=f"Slideshow ({media_dir})",
+            data={},
+            options=options,
+        )

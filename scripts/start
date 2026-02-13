@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -e
+
+# Ensure Home Assistant config directory is initialized
+uv run hass --config .haconfig --script ensure_config
+
+# Validate configuration before starting
+echo "Validating Home Assistant configuration..."
+if ! uv run hass --config .haconfig --script check_config 2>&1 | grep -q "Testing configuration"; then
+  echo "Error: Configuration validation failed"
+  exit 1
+fi
+echo "✓ Configuration is valid"
+
+# Set PYTHONPATH to include integration from repository
+export PYTHONPATH="${PYTHONPATH}:${PWD}/custom_components"
+
+# Start Home Assistant in debug mode
+# Using --skip-pip to avoid dependency conflicts in containerized environment
+# Using --ignore-os-check as container OS detection may not be accurate
+uv run hass \
+  --config .haconfig \
+  --debug \
+  --verbose

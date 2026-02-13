@@ -2,9 +2,16 @@
 
 ## Unreleased
 
-### Documentation
+## 0.2.6 - 2026-02-13
 
-- Updated README with new diagnostic sensor naming
+### Improvements
+- **YAML configuration support**: Integration now supports both UI and YAML configuration methods
+
+### Development Environment
+- **DevContainer setup**: Added complete DevContainer configuration for consistent local development environments
+- **Headless initialization**: Added automated setup script creating admin user and generating sample media for testing
+- **Home Assistant integration testing**: Home Assistant available as dev dependency for local manual integration testing
+- **Documentation updates**: Comprehensive developer guides for DevContainer workflow and configuration options
 
 ## 0.2.5 - 2026-02-06
 

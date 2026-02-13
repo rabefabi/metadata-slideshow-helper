@@ -1,0 +1,36 @@
+# Slideshow Demo Dashboard
+# Displays the metadata_slideshow_helper image entity with diagnostic information
+# This dashboard is automatically configured during init-headless for development
+
+views:
+  - title: Slideshow
+    path: slideshow
+    icon: mdi:image-multiple
+    cards:
+      # Main slideshow display
+      - type: picture-entity
+        entity: image.metadata_slideshow_helper
+        show_name: true
+        show_state: true
+        
+      # Statistics cards
+      - type: entities
+        title: Slideshow Statistics
+        entities:
+          - entity: sensor.matching_image_count
+            name: Matching Images
+          - entity: sensor.discovered_image_count
+            name: Total Discovered
+          - entity: sensor.failed_image_count
+            name: Failed Images
+          - entity: sensor.non_image_file_count
+            name: Non-Image Files
+            
+      # Information card
+      - type: markdown
+        content: |
+          ## Metadata Slideshow Helper
+          
+          This dashboard displays images from the configured media directory,
+          filtered by rating and tags. The image automatically advances based
+          on the configured interval.

@@ -1,0 +1,40 @@
+{
+  "name": "metadata-slideshow-helper",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "features": {},
+  "initializeCommand": "mkdir -p .haconfig && test -f .haconfig/configuration.yaml || cp .devcontainer/configuration.yaml .haconfig/configuration.yaml",
+  "postCreateCommand": "uv sync --all-extras",
+  "forwardPorts": [
+    8123
+  ],
+  "portsAttributes": {
+    "8123": {
+      "label": "Home Assistant",
+      "protocol": "http",
+      "onAutoForward": "notify"
+    }
+  },
+  "containerEnv": {
+    "TZ": "UTC"
+  },
+  "customizations": {
+    "vscode": {
+      // NOTE: Keep in sync with .vscode/extensions.json
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "redhat.vscode-yaml",
+        "esbenp.prettier-vscode",
+        "ms-python.debugpy",
+        "ms-python.mypy-type-checker",
+        "github.copilot-chat",
+        "eamodio.gitlens",
+        "ms-azuretools.vscode-containers",
+        "DavidAnson.vscode-markdownlint"
+      ]
+    }
+  }
+}

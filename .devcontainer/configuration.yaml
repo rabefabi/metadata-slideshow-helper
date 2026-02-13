@@ -1,0 +1,38 @@
+# Home Assistant test configuration for metadata-slideshow-helper development
+# This configuration is copied to .haconfig/configuration.yaml during DevContainer initialization
+# To modify: edit this file and commit changes so all developers have a consistent setup
+
+homeassistant:
+  name: metadata-slideshow-helper Test
+  latitude: 0
+  longitude: 0
+  elevation: 0
+  unit_system: metric
+  time_zone: UTC
+
+# Logging - configure to debug the integration
+logger:
+  default: info
+  logs:
+    custom_components.metadata_slideshow_helper: debug
+
+# Lovelace dashboard configuration
+lovelace:
+  mode: storage
+  dashboards:
+    lovelace-slideshow:
+      mode: yaml
+      title: Slideshow Demo
+      icon: mdi:image-multiple
+      show_in_sidebar: true
+      filename: lovelace-slideshow.yaml
+
+# Metadata Slideshow Helper Integration
+metadata_slideshow_helper:
+  - media_dir: "sample-media"
+    min_rating: 0
+    include_tags: ""
+    exclude_tags: ""
+    advance_interval: 10
+    rescan_interval: 300
+    advance_mode: "sequential"

@@ -363,24 +363,23 @@ def _embed_xmp_jpeg(path: Path, xmp_bytes: bytes) -> None:
 
 
 if __name__ == "__main__":
-    # Allow running this script directly to generate images
+    # Generate test images in the same structure as test fixtures use (by_year)
     logging.basicConfig(level=logging.INFO)
-    generate_test_images(
-        SAMPLE_MEDIA_DIR,
-        include_broken_images=True,
-        include_non_image_files=True,
-    )
-    print(f"Generated test images in {SAMPLE_MEDIA_DIR}")
 
-    # Also generate multi-directory setup with diagnostics
-    multi_dir = SAMPLE_MEDIA_DIR / "multi_dir_test"
+    # Clean up existing sample media to ensure fresh generation
+    if SAMPLE_MEDIA_DIR.exists():
+        import shutil
+
+        print(f"Removing existing sample media from {SAMPLE_MEDIA_DIR}...")
+        shutil.rmtree(SAMPLE_MEDIA_DIR)
+
+    # Generate multi-directory setup matching fixture expectations
+    multi_dir = SAMPLE_MEDIA_DIR / "by_year"
     images, dirs = generate_test_images_across_dirs(
         multi_dir,
         num_dirs=2,
+        specs=TEST_IMAGE_SPECS,
         include_broken_images=True,
         include_non_image_files=True,
     )
-    print(
-        f"Generated {len(images)} test images across {len(dirs)} directories "
-        f"with broken images and non-image files in {multi_dir}"
-    )
+    print(f"Generated {len(images)} test images across {len(dirs)} directories in {multi_dir}")

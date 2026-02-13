@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 
-class AdvanceMode(str, Enum):
+class AdvanceMode(StrEnum):
     """Enum for image advancement modes."""
 
     SEQUENTIAL = "sequential"

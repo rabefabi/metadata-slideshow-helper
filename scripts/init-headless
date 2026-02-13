@@ -1,0 +1,192 @@
+#!/usr/bin/env bash
+# Headless initialization script for metadata-slideshow-helper development
+# This script sets up Home Assistant in a completely automated/headless way,
+# suitable for CI/CD pipelines or unattended development environments.
+#
+# Usage: bash scripts/init-headless [--password PASSWORD] [--no-start]
+#   --password PASSWORD    Set admin user password (default: "dev-password")
+#   --no-start            Only initialize, don't start Home Assistant
+
+set -e
+
+# Configuration
+HA_PASSWORD="${HA_PASSWORD:-dev-password}"
+HA_PORT="${HA_PORT:-8123}"
+HA_CONFIG_DIR=".haconfig"
+HA_STARTUP_TIMEOUT=120
+HA_READY_CHECK_INTERVAL=2
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+
+# Parse command-line arguments
+NO_START=false
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --password)
+      HA_PASSWORD="$2"
+      shift 2
+      ;;
+    --no-start)
+      NO_START=true
+      shift
+      ;;
+    *)
+      echo "Unknown option: $1"
+      exit 1
+      ;;
+  esac
+done
+
+cd "$REPO_ROOT"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+log_info() {
+  echo -e "${GREEN}[INIT]${NC} $1"
+}
+
+log_warn() {
+  echo -e "${YELLOW}[WARN]${NC} $1"
+}
+
+log_error() {
+  echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Cleanup trap for background processes
+trap 'if [ -n "$HA_PID" ] && kill -0 "$HA_PID" 2>/dev/null; then kill "$HA_PID"; fi' EXIT ERR
+
+# Step 1: Ensure fresh config directory
+log_info "Setting up Home Assistant configuration directory..."
+if [ -d "$HA_CONFIG_DIR" ]; then
+  log_info "Removing existing configuration..."
+  rm -rf "$HA_CONFIG_DIR"
+fi
+mkdir -p "$HA_CONFIG_DIR"
+
+# Step 2: Copy configuration files from template
+log_info "Copying configuration files..."
+cp -v .devcontainer/configuration.yaml "$HA_CONFIG_DIR/configuration.yaml"
+cp -v .devcontainer/lovelace-slideshow.yaml "$HA_CONFIG_DIR/lovelace-slideshow.yaml"
+
+# Step 3: Create or copy secrets.yaml
+if [ -f ".devcontainer/secrets.yaml" ]; then
+  log_info "Using existing secrets.yaml..."
+  cp -v .devcontainer/secrets.yaml "$HA_CONFIG_DIR/secrets.yaml"
+else
+  log_info "Creating secrets.yaml from template..."
+  cp -v .devcontainer/secrets.yaml.template "$HA_CONFIG_DIR/secrets.yaml"
+  # Update password in the copied file
+  sed -i.bak "s/api_password: .*/api_password: $HA_PASSWORD/" "$HA_CONFIG_DIR/secrets.yaml"
+  rm -f "$HA_CONFIG_DIR/secrets.yaml.bak"
+fi
+
+# Step 4a: Initialize HA configuration (creates necessary directories)
+log_info "Initializing Home Assistant configuration structure..."
+uv run hass --config "$HA_CONFIG_DIR" --script ensure_config
+
+# Step 4b: Generate sample test images for integration testing
+log_info "Generating sample media for integration testing..."
+uv run python tests/image_generator.py
+
+log_info "✓ Configuration initialized successfully"
+
+if [ "$NO_START" = true ]; then
+  log_info "Initialization complete. Pass --no-start=false or omit flag to start Home Assistant."
+  exit 0
+fi
+
+# Step 5: Start Home Assistant in background using the start script
+log_info "Starting Home Assistant..."
+bash "$SCRIPT_DIR/start" > "$HA_CONFIG_DIR/homeassistant.log" 2>&1 &
+
+HA_PID=$!
+log_info "Home Assistant started (PID: $HA_PID)"
+
+# Step 6: Wait for Home Assistant to be ready
+log_info "Waiting for Home Assistant to be ready (timeout: ${HA_STARTUP_TIMEOUT}s)..."
+elapsed=0
+while [ $elapsed -lt $HA_STARTUP_TIMEOUT ]; do
+  if curl -s "http://localhost:$HA_PORT" > /dev/null 2>&1; then
+    log_info "✓ Home Assistant is responding"
+    break
+  fi
+  sleep $HA_READY_CHECK_INTERVAL
+  elapsed=$((elapsed + HA_READY_CHECK_INTERVAL))
+  echo -n "."
+done
+
+if [ $elapsed -ge $HA_STARTUP_TIMEOUT ]; then
+  log_error "Home Assistant failed to start within ${HA_STARTUP_TIMEOUT}s"
+  log_error "Check logs: cat $HA_CONFIG_DIR/homeassistant.log"
+  kill $HA_PID 2>/dev/null || true
+  exit 1
+fi
+
+# Step 7: Create admin user via API (if not already created)
+log_info "Setting up admin user..."
+sleep 2  # Additional grace period for API to be fully ready
+
+RESPONSE=$(curl -s -X POST "http://localhost:$HA_PORT/api/onboarding/users" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"name\": \"Developer\",
+    \"username\": \"admin\",
+    \"password\": \"$HA_PASSWORD\",
+    \"client_id\": \"https://example.com/dev\",
+    \"language\": \"en\"
+  }" 2>/dev/null || echo '{"error":"request_failed"}')
+
+# Check if user creation was successful or user already exists
+if echo "$RESPONSE" | grep -q '"auth_code"\|"access_token"'; then
+  log_info "✓ Admin user created/found successfully"
+elif echo "$RESPONSE" | grep -q 'already_exists\|auth_only_owner'; then
+  log_warn "Admin user already exists (expected on subsequent runs)"
+else
+  log_warn "User creation response: $RESPONSE"
+fi
+
+# Step 8: Mark onboarding as complete by updating storage
+# TODO: fix skip onboarding logic - currently this doesn't fully suppress the onboarding UI
+log_info "Completing onboarding flow..."
+sleep 1
+
+# Get the onboarding storage file path
+ONBOARDING_FILE="$HA_CONFIG_DIR/storage/onboarding"
+
+# Create a simple onboarding marker if it doesn't exist
+if [ ! -f "$ONBOARDING_FILE" ]; then
+  mkdir -p "$(dirname "$ONBOARDING_FILE")"
+  cat > "$ONBOARDING_FILE" << 'EOF'
+{
+  "version": 3,
+  "key": "onboarding",
+  "data": {
+    "done": ["user", "core_config", "integration_default_config", "analytics"]
+  }
+}
+EOF
+  log_info "✓ Onboarding marked as complete"
+else
+  log_info "✓ Onboarding storage already exists"
+fi
+
+# Step 9: Give Home Assistant a moment to reload after storage changes
+sleep 2
+
+# Step 10: Summary
+log_info "Home Assistant is now running in headless mode"
+log_info "Access URL: http://localhost:$HA_PORT"
+log_info "Admin username: admin"
+log_info "Admin password: $HA_PASSWORD"
+log_info "Logs: tail -f $HA_CONFIG_DIR/homeassistant.log"
+log_info ""
+log_info "Process running as PID: $HA_PID"
+log_info "Press Ctrl+C to stop Home Assistant"
+
+# Wait for Home Assistant process to finish (keeps script running until interrupted)
+wait $HA_PID

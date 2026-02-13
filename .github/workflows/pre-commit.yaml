@@ -18,6 +18,8 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
         with:
+          # NOTE: Ensure that version number is in sync with .devcontainer/Dockerfile
+          version: "0.10.2"
           python-version: "3.13"
           enable-cache: true
 

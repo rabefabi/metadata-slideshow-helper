@@ -35,3 +35,30 @@
 | **Matching images** | Images from the discovered set that pass all configured filters (min_rating, include_tags, exclude_tags). |
 | **Rescan** | Walking the media directory and reading image metadata; controlled by `rescan_interval`. |
 | **Advance** | Automatically moving to the next matching image; happens every `advance_interval` seconds. |
+
+## Configuration
+
+The integration supports two configuration methods:
+
+1. **UI Configuration Flow (Recommended)**: Add the integration through Home Assistant's UI (Settings → Devices & services → Add Integration)
+2. **YAML Configuration**: Optionally configure via `configuration.yaml` for automation or version control
+
+Example YAML configuration:
+
+```yaml
+metadata_slideshow_helper:
+  - media_dir: "/path/to/photos/"
+    min_rating: 2
+    include_tags: ""
+    exclude_tags: ""
+    advance_interval: 10
+    rescan_interval: 300
+    advance_mode: "sequential"
+    smart_random_sequence_length: 5
+```
+
+Both methods create the same entities and provide identical functionality. YAML configuration is imported through the config flow and stored in the integration's options.
+
+## Development
+
+This project uses DevContainers for development. See [docs/dev-setup.md](docs/dev-setup.md) for detailed setup instructions.
