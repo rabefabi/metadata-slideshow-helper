@@ -1,10 +1,14 @@
 FROM mcr.microsoft.com/devcontainers/python:3.13-bookworm
 
-# Install Node.js, npm for MCP servers, and ffmpeg for media processing
+# Install Node.js, npm for MCP servers, ffmpeg for media processing, and browser dependencies for Playwright
 RUN apt-get update && apt-get install -y --no-install-recommends \
     nodejs \
     npm \
     ffmpeg \
+    libxcomposite1 \
+    libxdamage1 \
+    libgtk-3-0 \
+    libatk1.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv for dependency management

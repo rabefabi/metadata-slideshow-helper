@@ -1,7 +1,12 @@
 {
     "chat.tools.terminal.autoApprove": {
         "uv run pre-commit run --all-files": true,
+        "/^pkill -f \"hass\\.\\*haconfig\" \\|\\| true$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
     },
+    "chat.useAgentSkills": true,
     "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
     "python.testing.pytestArgs": [
         "tests"
