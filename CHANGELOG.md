@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixes
+- **DevContainer Node.js version**: Updated Dockerfile to install Node.js 20+ (required for Playwright MCP server). Previous version had Node.js 18 which is incompatible with @playwright/mcp
+- **Documentation**: Added Node.js 20+ requirement to Playwright integration test skill prerequisites and troubleshooting
+
 ## 0.2.6 - 2026-02-13
 
 ### Improvements

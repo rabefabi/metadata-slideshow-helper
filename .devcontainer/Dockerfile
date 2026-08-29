@@ -1,9 +1,9 @@
 FROM mcr.microsoft.com/devcontainers/python:3.13-bookworm
 
-# Install Node.js, npm for MCP servers, ffmpeg for media processing, and browser dependencies for Playwright
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Install Node.js 20+ (required for Playwright MCP), npm, ffmpeg, and browser dependencies
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get update && apt-get install -y --no-install-recommends \
     nodejs \
-    npm \
     ffmpeg \
     libxcomposite1 \
     libxdamage1 \

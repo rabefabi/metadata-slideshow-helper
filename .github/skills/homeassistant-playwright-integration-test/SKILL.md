@@ -1,7 +1,7 @@
 ---
 name: homeassistant-playwright-integration-test
 description: Test Home Assistant custom integrations using Playwright browser automation. Use when you need to verify integration functionality in a running Home Assistant instance, test UI components, dashboards, or config flows. Covers launching HA via VSCode tasks, logging in, navigating dashboards, and verifying entities.
-compatibility: Requires Firefox browser dependencies (libxcomposite1, libxdamage1, libgtk-3-0, libatk1.0-0), Playwright MCP server, and VSCode tasks configured for Home Assistant
+compatibility: Requires Node.js 20+, Firefox browser dependencies (libxcomposite1, libxdamage1, libgtk-3-0, libatk1.0-0), Playwright MCP server, and VSCode tasks configured for Home Assistant
 metadata:
   author: rabefabi
   version: "1.0"
@@ -15,11 +15,12 @@ This skill covers end-to-end testing of Home Assistant custom integrations using
 
 Before running this skill, ensure:
 
-1. Home Assistant is configured in `.haconfig/` directory
-2. Integration is configured in `configuration.yaml`
-3. VSCode tasks are set up for Home Assistant lifecycle
-4. Playwright MCP server is available with Firefox installed
-5. Browser dependencies are installed in the container
+1. **Node.js 20+** is installed (required for Playwright MCP server)
+2. Home Assistant is configured in `.haconfig/` directory
+3. Integration is configured in `configuration.yaml`
+4. VSCode tasks are set up for Home Assistant lifecycle
+5. Playwright MCP server is available with Firefox installed
+6. Browser dependencies are installed in the container
 
 ## Step-by-Step Testing Process
 
@@ -129,6 +130,15 @@ mcp_playwright_browser_close
 To stop Home Assistant, interrupt the task or kill the process.
 
 ## Common Issues and Solutions
+
+### Issue: Playwright MCP requires Node.js 20 or higher
+
+**Symptom:** Error "Playwright requires Node.js 20 or higher" when trying to use Playwright MCP
+
+**Solution:** Ensure Node.js 20+ is installed in the DevContainer. The `.devcontainer/Dockerfile` should install it via NodeSource repository. If you see this error:
+1. Rebuild the DevContainer: Open command palette and run "Dev Containers: Rebuild Container"
+2. Verify Node.js version: `node --version` (should output v20.x.x or higher)
+3. Clear npm cache if issues persist: `npm cache clean --force`
 
 ### Issue: Browser dependencies missing
 
