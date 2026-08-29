@@ -3,7 +3,7 @@
 ## Unreleased
 
 ### Versioning
-- **Pre-release marker**: Bumped the integration metadata to `0.2.7b1` so the loaded custom build is visibly distinct from the last stable release while testing the startup-safe fix on a real system.
+- **Pre-release marker**: Bumped the integration metadata to `0.2.7b2` so the loaded custom build is visibly distinct from the last stable release while testing the startup-safe fix and the startup-race guard on a real system.
 
 ### Fixes
 - **Startup-safe media refresh**: The integration now keeps setup lightweight and defers the first full media scan to a background task after the entry finishes loading, while keeping the periodic rescan cadence for later updates.
