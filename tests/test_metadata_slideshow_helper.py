@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from custom_components.metadata_slideshow_helper import async_setup_entry
+from custom_components.metadata_slideshow_helper.image import SlideshowImageEntity
 from custom_components.metadata_slideshow_helper.scanner import MediaScanner, apply_filters
 
 from tests.image_generator import (
@@ -277,3 +278,25 @@ async def test_async_setup_entry_defers_initial_scan(monkeypatch: pytest.MonkeyP
 
     assert fake_hass.config_entries.async_forward_entry_setups.await_count == 1
     assert fake_hass.async_create_task.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_image_entity_refreshes_before_initial_image_fetch(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The entity should trigger an initial coordinator refresh when no image has been scanned yet."""
+
+    coordinator = MagicMock()
+    coordinator.hass = MagicMock()
+    coordinator.data = {}
+    coordinator.async_refresh = AsyncMock()
+    coordinator.async_add_listener = MagicMock(return_value=lambda: None)
+
+    entity = SlideshowImageEntity(coordinator, "entry-123", "/tmp/photos")
+    entity.async_write_ha_state = MagicMock()
+    monkeypatch.setattr(
+        "custom_components.metadata_slideshow_helper.image.CoordinatorEntity.async_added_to_hass",
+        AsyncMock(),
+    )
+
+    await entity.async_added_to_hass()
+
+    coordinator.async_refresh.assert_awaited_once()

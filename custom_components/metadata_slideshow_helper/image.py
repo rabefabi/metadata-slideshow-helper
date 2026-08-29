@@ -61,8 +61,9 @@ class SlideshowImageEntity(CoordinatorEntity, ImageEntity):  # type: ignore[misc
         coordinator_data = self.coordinator.data or {}
         current_path = coordinator_data.get(DATA_CURRENT_PATH)
         if not current_path:
-            _LOGGER.warning(
-                "async_image called with no current_path; coordinator data keys=%s",
+            _LOGGER.debug(
+                "async_image called before the first scan populated current_path; "
+                "coordinator data keys=%s",
                 list(coordinator_data.keys()),
             )
             return None
@@ -117,8 +118,13 @@ class SlideshowImageEntity(CoordinatorEntity, ImageEntity):  # type: ignore[misc
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
-        # Initialize last path and timestamp to force initial fetch
+
         data = self.coordinator.data or {}
+        if not data.get(DATA_CURRENT_PATH):
+            await self.coordinator.async_refresh()
+            data = self.coordinator.data or {}
+
+        # Initialize last path and timestamp to force initial fetch
         self._last_path = data.get(DATA_CURRENT_PATH)
         # Set initial timestamp so frontend fetches image bytes
         self._attr_image_last_updated = dt_util.utcnow()
