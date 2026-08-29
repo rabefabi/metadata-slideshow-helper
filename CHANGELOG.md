@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Versioning
+- **Pre-release marker**: Bumped the integration metadata to `0.2.7b1` so the loaded custom build is visibly distinct from the last stable release while testing the startup-safe fix on a real system.
+
 ### Fixes
 - **Startup-safe media refresh**: The integration now keeps setup lightweight and defers the first full media scan to a background task after the entry finishes loading, while keeping the periodic rescan cadence for later updates.
 - **Scanner efficiency**: Reworked the media scan to walk each configured root only once instead of re-scanning once per supported extension. This reduces the work required when the deferred scan eventually runs.
