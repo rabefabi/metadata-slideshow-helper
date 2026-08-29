@@ -1,6 +1,10 @@
+import asyncio
 from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from custom_components.metadata_slideshow_helper import async_setup_entry
+from custom_components.metadata_slideshow_helper.image import SlideshowImageEntity
 from custom_components.metadata_slideshow_helper.scanner import MediaScanner, apply_filters
 
 from tests.image_generator import (
@@ -229,3 +233,70 @@ async def test_diagnostic_metrics_caching(tmp_path: Path) -> None:
     # Verify discovered and matching counts are also consistent
     assert len(result2.discovered) == len(result1.discovered), "Discovered count should match"
     assert len(result2.matching) == len(result1.matching), "Matching count should match"
+
+
+@pytest.mark.asyncio
+async def test_async_setup_entry_defers_initial_scan(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Setup should stay lightweight and postpone the first full scan until after startup."""
+
+    class FakeCoordinator:
+        def __init__(self, hass, logger, name, update_method, update_interval):
+            self.hass = hass
+            self.logger = logger
+            self.name = name
+            self.update_method = update_method
+            self.update_interval = update_interval
+            self.data = {}
+            self.async_config_entry_first_refresh = AsyncMock(
+                side_effect=AssertionError("Bootstrap should not block on the initial scan")
+            )
+            self.async_refresh = AsyncMock()
+
+    def schedule_task(coro):
+        return asyncio.get_running_loop().create_task(coro)
+
+    fake_hass = MagicMock()
+    fake_hass.data = {}
+    fake_hass.config_entries = MagicMock()
+    fake_hass.config_entries.async_entries = MagicMock(return_value=[])
+    fake_hass.config_entries.async_forward_entry_setups = AsyncMock()
+    fake_hass.async_create_task = MagicMock(side_effect=schedule_task)
+
+    entry = MagicMock()
+    entry.entry_id = "entry-123"
+    entry.options = {}
+    entry.data = {"media_dir": "/tmp/photos"}
+    entry.add_update_listener = MagicMock(return_value=lambda: None)
+    entry.async_on_unload = MagicMock(return_value=None)
+
+    monkeypatch.setattr(
+        "homeassistant.helpers.update_coordinator.DataUpdateCoordinator",
+        FakeCoordinator,
+    )
+
+    await async_setup_entry(fake_hass, entry)
+
+    assert fake_hass.config_entries.async_forward_entry_setups.await_count == 1
+    assert fake_hass.async_create_task.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_image_entity_refreshes_before_initial_image_fetch(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The entity should trigger an initial coordinator refresh when no image has been scanned yet."""
+
+    coordinator = MagicMock()
+    coordinator.hass = MagicMock()
+    coordinator.data = {}
+    coordinator.async_refresh = AsyncMock()
+    coordinator.async_add_listener = MagicMock(return_value=lambda: None)
+
+    entity = SlideshowImageEntity(coordinator, "entry-123", "/tmp/photos")
+    entity.async_write_ha_state = MagicMock()
+    monkeypatch.setattr(
+        "custom_components.metadata_slideshow_helper.image.CoordinatorEntity.async_added_to_hass",
+        AsyncMock(),
+    )
+
+    await entity.async_added_to_hass()
+
+    coordinator.async_refresh.assert_awaited_once()
