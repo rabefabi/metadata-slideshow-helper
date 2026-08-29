@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Fixes
+- **Startup-safe media refresh**: The integration now keeps setup lightweight and defers the first full media scan to a background task after the entry finishes loading, while keeping the periodic rescan cadence for later updates.
+- **Scanner efficiency**: Reworked the media scan to walk each configured root only once instead of re-scanning once per supported extension. This reduces the work required when the deferred scan eventually runs.
 - **DevContainer Node.js version**: Updated Dockerfile to install Node.js 20+ (required for Playwright MCP server). Previous version had Node.js 18 which is incompatible with @playwright/mcp
 - **Documentation**: Added Node.js 20+ requirement to Playwright integration test skill prerequisites and troubleshooting
 

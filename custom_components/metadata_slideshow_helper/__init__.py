@@ -281,8 +281,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         update_interval=timedelta(seconds=advance_interval),
     )
 
-    await coordinator.async_config_entry_first_refresh()
-
     hass.data[DOMAIN][entry.entry_id] = {
         DATA_CONFIG: config_source,
         DATA_COORDINATOR: coordinator,
@@ -292,6 +290,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    async def _async_deferred_initial_scan() -> None:
+        """Avoid a full bootstrap-time scan; do the first media refresh after setup completes."""
+        _LOGGER.debug("Starting deferred initial media scan for %s", entry.entry_id)
+        await coordinator.async_refresh()
+
+    # Keep setup fast and let the periodic rescan path handle media discovery after startup.
+    hass.async_create_task(_async_deferred_initial_scan())
     return True
 
 

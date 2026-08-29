@@ -101,27 +101,34 @@ class MediaScanner:
                 _LOGGER.warning("Media root not found or not a directory: %s", root)
                 continue
 
-            # Count non-image files
+            # Walk each root once to avoid repeated filesystem scans for each supported extension.
+            # This keeps initial setup responsive on large media libraries and reduces the chance of
+            # Home Assistant bootstrap timeouts during config-entry initial refresh.
             for p in root_path.rglob("*"):
-                if p.is_file():
-                    ext = p.suffix.lower()
-                    if ext not in SUPPORTED_EXT:
-                        non_image_file_count += 1
+                ext = p.suffix.lower()
 
-            for ext in SUPPORTED_EXT:
-                for p in root_path.rglob(f"*{ext}"):
-                    # Skip unreadable files (broken symlinks, permission issues)
-                    if not p.is_file() or not os.access(p, os.R_OK):
-                        failed_count += 1
-                        continue
+                if not p.exists() and ext in SUPPORTED_EXT:
+                    failed_count += 1
+                    continue
 
-                    full = str(p)
-                    try:
-                        meta = self._read_metadata(full)
-                        results.append(meta)
-                    except Exception:
-                        # On any error, still include the file with empty metadata
-                        results.append(ImageMeta(path=full, tags=[], rating=0, date=None))
+                if not p.is_file():
+                    continue
+
+                if ext not in SUPPORTED_EXT:
+                    non_image_file_count += 1
+                    continue
+
+                if not os.access(p, os.R_OK):
+                    failed_count += 1
+                    continue
+
+                full = str(p)
+                try:
+                    meta = self._read_metadata(full)
+                    results.append(meta)
+                except Exception:
+                    # On any error, still include the file with empty metadata
+                    results.append(ImageMeta(path=full, tags=[], rating=0, date=None))
         return ScanResult(
             discovered=results,
             matching=None,

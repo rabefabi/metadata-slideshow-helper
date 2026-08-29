@@ -1,6 +1,9 @@
+import asyncio
 from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from custom_components.metadata_slideshow_helper import async_setup_entry
 from custom_components.metadata_slideshow_helper.scanner import MediaScanner, apply_filters
 
 from tests.image_generator import (
@@ -229,3 +232,48 @@ async def test_diagnostic_metrics_caching(tmp_path: Path) -> None:
     # Verify discovered and matching counts are also consistent
     assert len(result2.discovered) == len(result1.discovered), "Discovered count should match"
     assert len(result2.matching) == len(result1.matching), "Matching count should match"
+
+
+@pytest.mark.asyncio
+async def test_async_setup_entry_defers_initial_scan(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Setup should stay lightweight and postpone the first full scan until after startup."""
+
+    class FakeCoordinator:
+        def __init__(self, hass, logger, name, update_method, update_interval):
+            self.hass = hass
+            self.logger = logger
+            self.name = name
+            self.update_method = update_method
+            self.update_interval = update_interval
+            self.data = {}
+            self.async_config_entry_first_refresh = AsyncMock(
+                side_effect=AssertionError("Bootstrap should not block on the initial scan")
+            )
+            self.async_refresh = AsyncMock()
+
+    def schedule_task(coro):
+        return asyncio.get_running_loop().create_task(coro)
+
+    fake_hass = MagicMock()
+    fake_hass.data = {}
+    fake_hass.config_entries = MagicMock()
+    fake_hass.config_entries.async_entries = MagicMock(return_value=[])
+    fake_hass.config_entries.async_forward_entry_setups = AsyncMock()
+    fake_hass.async_create_task = MagicMock(side_effect=schedule_task)
+
+    entry = MagicMock()
+    entry.entry_id = "entry-123"
+    entry.options = {}
+    entry.data = {"media_dir": "/tmp/photos"}
+    entry.add_update_listener = MagicMock(return_value=lambda: None)
+    entry.async_on_unload = MagicMock(return_value=None)
+
+    monkeypatch.setattr(
+        "homeassistant.helpers.update_coordinator.DataUpdateCoordinator",
+        FakeCoordinator,
+    )
+
+    await async_setup_entry(fake_hass, entry)
+
+    assert fake_hass.config_entries.async_forward_entry_setups.await_count == 1
+    assert fake_hass.async_create_task.call_count == 1
